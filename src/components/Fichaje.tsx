@@ -64,32 +64,42 @@ export default function Fichaje({ userId, horariosPorDia }: Props) {
     const extra = fichaje ? extraDelDia(fichaje, horarioHoy) : 0
 
     return (
-        <div style={{ background: '#f4f4f5', borderRadius: 16, padding: 20, marginTop: 16 }}>
-            <h2 style={{ textTransform: 'capitalize' }}>
+        <div className="bg-slate-800 rounded-2xl p-5 mt-4">
+            <h2 className="text-base font-medium capitalize mb-4">
                 {hoy.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
             </h2>
 
-            <div style={{ display: 'flex', justifyContent: 'space-around', margin: '16px 0' }}>
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, color: '#666' }}>Entrada</div>
-                    <div style={{ fontSize: 26, fontWeight: 600 }}>{fichaje?.hora_entrada?.slice(0, 5) || '—'}</div>
+            <div className="flex justify-around my-4">
+                <div className="text-center">
+                    <div className="text-xs text-slate-400">Entrada</div>
+                    <div className="text-3xl font-semibold">{fichaje?.hora_entrada?.slice(0, 5) || '—'}</div>
                 </div>
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, color: '#666' }}>Salida</div>
-                    <div style={{ fontSize: 26, fontWeight: 600 }}>{fichaje?.hora_salida?.slice(0, 5) || '—'}</div>
+                <div className="text-center">
+                    <div className="text-xs text-slate-400">Salida</div>
+                    <div className="text-3xl font-semibold">{fichaje?.hora_salida?.slice(0, 5) || '—'}</div>
                 </div>
             </div>
 
             {!fichaje?.hora_entrada && (
-                <button onClick={marcarEntrada} style={{ width: '100%', padding: 14 }}>Marcar entrada</button>
+                <button
+                    onClick={marcarEntrada}
+                    className="w-full py-3.5 rounded-xl bg-sky-400 text-slate-900 font-semibold"
+                >
+                    Marcar entrada
+                </button>
             )}
             {fichaje?.hora_entrada && !fichaje?.hora_salida && (
-                <button onClick={marcarSalida} style={{ width: '100%', padding: 14 }}>Marcar salida</button>
+                <button
+                    onClick={marcarSalida}
+                    className="w-full py-3.5 rounded-xl bg-sky-400 text-slate-900 font-semibold"
+                >
+                    Marcar salida
+                </button>
             )}
             {fichaje?.hora_entrada && fichaje?.hora_salida && (
-                <p style={{ textAlign: 'center', fontWeight: 600, color: extra >= 0 ? 'green' : 'red' }}>
+                <div className={`text-center py-2.5 rounded-xl font-semibold ${extra >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
                     Extra de hoy: {formatMinutos(extra)}
-                </p>
+                </div>
             )}
         </div>
     )

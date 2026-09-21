@@ -41,14 +41,21 @@ function App() {
   if (!session) return <Login />
 
   return (
-    <div style={{ fontFamily: 'sans-serif', maxWidth: 480, margin: '0 auto', padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 className="text-4xl font-bold text-blue-500">TempoMio</h1>
-        <button onClick={() => supabase.auth.signOut()}>Salir</button>
+    <div className="min-h-screen bg-slate-900 text-slate-100">
+      <div className="max-w-md mx-auto px-4 py-6">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-semibold">TempoMio</h1>
+          <button
+            onClick={() => supabase.auth.signOut()}
+            className="text-sm text-slate-400 hover:text-slate-200"
+          >
+            Salir
+          </button>
+        </div>
+        <Fichaje userId={session.user.id} horariosPorDia={horariosPorDia} />
+        <Resumen horariosPorDia={horariosPorDia} />
+        <HorarioBase userId={session.user.id} horariosPorDia={horariosPorDia} onActualizado={cargarHorarios} />
       </div>
-      <Fichaje userId={session.user.id} horariosPorDia={horariosPorDia} />
-      <Resumen horariosPorDia={horariosPorDia} />
-      <HorarioBase userId={session.user.id} horariosPorDia={horariosPorDia} onActualizado={cargarHorarios} />
     </div>
   )
 }

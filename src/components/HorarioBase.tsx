@@ -19,7 +19,6 @@ interface BorradorDia {
 export default function HorarioBase({ userId, horariosPorDia, onActualizado }: Props) {
     const [editando, setEditando] = useState(false)
 
-    // Estado inicial del formulario, a partir de los horarios actuales
     const [borrador, setBorrador] = useState<BorradorDia[]>(() =>
         horariosPorDia.map((h, i) => ({
             dia_semana: i,
@@ -29,7 +28,6 @@ export default function HorarioBase({ userId, horariosPorDia, onActualizado }: P
     )
 
     async function guardar() {
-        // Solo guardamos los días que tienen entrada Y salida
         const filas = borrador
             .filter((d) => d.hora_entrada && d.hora_salida)
             .map((d) => ({
@@ -46,7 +44,7 @@ export default function HorarioBase({ userId, horariosPorDia, onActualizado }: P
 
         if (!error) {
             setEditando(false)
-            onActualizado() // avisa a App para que recargue los horarios
+            onActualizado()
         }
     }
 
@@ -59,18 +57,25 @@ export default function HorarioBase({ userId, horariosPorDia, onActualizado }: P
     // ---------- Modo vista ----------
     if (!editando) {
         return (
-            <div style={{ background: '#f4f4f5', borderRadius: 16, padding: 20, marginTop: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0 }}>Horario base</h3>
-                    <button onClick={() => setEditando(true)}>Editar</button>
+            <div className="bg-slate-800 rounded-2xl p-5 mt-4">
+                <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-base font-medium">Horario base</h3>
+                    <button
+                        onClick={() => setEditando(true)}
+                        className="text-sm text-sky-400 hover:text-sky-300"
+                    >
+                        Editar
+                    </button>
                 </div>
-                <ul style={{ listStyle: 'none', padding: 0, marginTop: 12 }}>
+                <ul>
                     {DIAS.map((nombre, i) => {
                         const h = horariosPorDia[i]
                         return (
-                            <li key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #ddd' }}>
+                            <li key={i} className="flex justify-between py-2 border-b border-slate-700 last:border-0 text-sm">
                                 <span>{nombre}</span>
-                                <span>{h ? `${h.hora_entrada.slice(0, 5)} – ${h.hora_salida.slice(0, 5)}` : 'Libre'}</span>
+                                <span className={h ? 'text-slate-200' : 'text-slate-500'}>
+                                    {h ? `${h.hora_entrada.slice(0, 5)} – ${h.hora_salida.slice(0, 5)}` : 'Libre'}
+                                </span>
                             </li>
                         )
                     })}
@@ -81,26 +86,32 @@ export default function HorarioBase({ userId, horariosPorDia, onActualizado }: P
 
     // ---------- Modo edición ----------
     return (
-        <div style={{ background: '#f4f4f5', borderRadius: 16, padding: 20, marginTop: 16 }}>
-            <h3 style={{ marginTop: 0 }}>Editar horario base</h3>
+        <div className="bg-slate-800 rounded-2xl p-5 mt-4">
+            <h3 className="text-base font-medium mb-3">Editar horario base</h3>
             {DIAS.map((nombre, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: 8, padding: '6px 0' }}>
-                    <span>{nombre}</span>
+                <div key={i} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 py-1.5">
+                    <span className="text-sm">{nombre}</span>
                     <input
                         type="time"
                         value={borrador[i].hora_entrada}
                         onChange={(e) => cambiarHora(i, 'hora_entrada', e.target.value)}
+                        className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-sm"
                     />
                     <input
                         type="time"
                         value={borrador[i].hora_salida}
                         onChange={(e) => cambiarHora(i, 'hora_salida', e.target.value)}
+                        className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-sm"
                     />
                 </div>
             ))}
-            <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-                <button onClick={guardar} style={{ flex: 1 }}>Guardar</button>
-                <button onClick={() => setEditando(false)} style={{ flex: 1 }}>Cancelar</button>
+            <div className="flex gap-2.5 mt-4">
+                <button onClick={guardar} className="flex-1 py-2.5 rounded-xl bg-sky-400 text-slate-900 font-semibold">
+                    Guardar
+                </button>
+                <button onClick={() => setEditando(false)} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-200">
+                    Cancelar
+                </button>
             </div>
         </div>
     )

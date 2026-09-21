@@ -38,51 +38,51 @@ export default function Resumen({ horariosPorDia }: Props) {
     const meses = agruparPorMes(fichajes, horariosPorDia)
 
     return (
-        <div style={{ background: '#f4f4f5', borderRadius: 16, padding: 20, marginTop: 16 }}>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        <div className="bg-slate-800 rounded-2xl p-5 mt-4">
+            <div className="flex gap-2 mb-4">
                 <button
                     onClick={() => setVista('semana')}
-                    style={{ flex: 1, fontWeight: vista === 'semana' ? 700 : 400 }}
+                    className={`flex-1 py-2 rounded-lg text-sm ${vista === 'semana' ? 'bg-slate-700 text-slate-100' : 'text-slate-400'}`}
                 >
                     Semanas
                 </button>
                 <button
                     onClick={() => setVista('mes')}
-                    style={{ flex: 1, fontWeight: vista === 'mes' ? 700 : 400 }}
+                    className={`flex-1 py-2 rounded-lg text-sm ${vista === 'mes' ? 'bg-slate-700 text-slate-100' : 'text-slate-400'}`}
                 >
                     Meses
                 </button>
             </div>
 
             {vista === 'semana' && (
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                <ul className="space-y-0">
                     {semanas.map((s) => (
-                        <li key={s.semanaInicio} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #ddd' }}>
+                        <li key={s.semanaInicio} className="flex justify-between py-2.5 border-b border-slate-700 last:border-0 text-sm">
                             <span>
                                 Semana del {new Date(s.semanaInicio + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                             </span>
-                            <span style={{ fontWeight: 600, color: s.extraMinutos >= 0 ? 'green' : 'red' }}>
+                            <span className={`font-semibold ${s.extraMinutos >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                 {formatMinutos(s.extraMinutos)}
                             </span>
                         </li>
                     ))}
-                    {semanas.length === 0 && <p>Aún no hay fichajes registrados.</p>}
+                    {semanas.length === 0 && <p className="text-slate-400 text-sm">Aún no hay fichajes registrados.</p>}
                 </ul>
             )}
 
             {vista === 'mes' && (
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                <ul className="space-y-0">
                     {meses.map((m) => (
-                        <li key={m.mes} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #ddd' }}>
-                            <span>
+                        <li key={m.mes} className="flex justify-between py-2.5 border-b border-slate-700 last:border-0 text-sm">
+                            <span className="capitalize">
                                 {new Date(m.mes + '-01T00:00:00').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
                             </span>
-                            <span style={{ fontWeight: 600, color: m.extraMinutos >= 0 ? 'green' : 'red' }}>
+                            <span className={`font-semibold ${m.extraMinutos >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                 {formatMinutos(m.extraMinutos)}
                             </span>
                         </li>
                     ))}
-                    {meses.length === 0 && <p>Aún no hay fichajes registrados.</p>}
+                    {meses.length === 0 && <p className="text-slate-400 text-sm">Aún no hay fichajes registrados.</p>}
                 </ul>
             )}
         </div>
