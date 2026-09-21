@@ -43,7 +43,7 @@ function App() {
   return (
     <div style={{ fontFamily: 'sans-serif', maxWidth: 480, margin: '0 auto', padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>TempoMio</h1>
+        <h1 className="text-4xl font-bold text-blue-500">TempoMio</h1>
         <button onClick={() => supabase.auth.signOut()}>Salir</button>
       </div>
       <Fichaje userId={session.user.id} horariosPorDia={horariosPorDia} />
