@@ -105,3 +105,25 @@ export function agruparPorMes(
         .map(([mes, extraMinutos]) => ({ mes, extraMinutos }))
         .sort((a, b) => b.mes.localeCompare(a.mes))
 }
+// Genera las celdas de un calendario mensual (incluye huecos al principio
+// para alinear con el día de la semana). Devuelve un array donde cada celda
+// es una fecha "YYYY-MM-DD" o null (hueco).
+export function generarCalendario(anio: number, mes: number): (string | null)[] {
+    // mes: 0-11 (enero = 0)
+    const primerDia = new Date(anio, mes, 1)
+    const ultimoDia = new Date(anio, mes + 1, 0)
+    const diasEnMes = ultimoDia.getDate()
+
+    // Día de la semana del primer día, con lunes = 0
+    const offset = (primerDia.getDay() + 6) % 7
+
+    const celdas: (string | null)[] = []
+    // Huecos antes del día 1
+    for (let i = 0; i < offset; i++) celdas.push(null)
+    // Los días del mes
+    for (let d = 1; d <= diasEnMes; d++) {
+        const fecha = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+        celdas.push(fecha)
+    }
+    return celdas
+}

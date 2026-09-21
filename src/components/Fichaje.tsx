@@ -19,6 +19,9 @@ function fechaHoy(): string {
 export default function Fichaje({ userId, horariosPorDia }: Props) {
     const [fichaje, setFichaje] = useState<FichajeType | null>(null)
     const [cargando, setCargando] = useState(true)
+    const [editando, setEditando] = useState(false)
+    const [entradaManual, setEntradaManual] = useState('')
+    const [salidaManual, setSalidaManual] = useState('')
 
     useEffect(() => {
         cargarFichajeHoy()
@@ -57,6 +60,32 @@ export default function Fichaje({ userId, horariosPorDia }: Props) {
         if (!error) setFichaje(data)
     }
 
+    function abrirEdicion() {
+        setEntradaManual(fichaje?.hora_entrada?.slice(0, 5) || '')
+        setSalidaManual(fichaje?.hora_salida?.slice(0, 5) || '')
+        setEditando(true)
+    }
+
+    async function guardarEdicion() {
+        const { data, error } = await supabase
+            .from('fichajes')
+            .upsert(
+                {
+                    user_id: userId,
+                    fecha: fechaHoy(),
+                    hora_entrada: entradaManual || null,
+                    hora_salida: salidaManual || null,
+                },
+                { onConflict: 'user_id,fecha' }
+            )
+            .select()
+            .single()
+        if (!error) {
+            setFichaje(data)
+            setEditando(false)
+        }
+    }
+
     if (cargando) return <p>Cargando...</p>
 
     const hoy = new Date()
@@ -80,7 +109,7 @@ export default function Fichaje({ userId, horariosPorDia }: Props) {
                 </div>
             </div>
 
-            {!fichaje?.hora_entrada && (
+            {!editando && !fichaje?.hora_entrada && (
                 <button
                     onClick={marcarEntrada}
                     className="w-full py-3.5 rounded-xl bg-sky-400 text-slate-900 font-semibold"
@@ -88,7 +117,7 @@ export default function Fichaje({ userId, horariosPorDia }: Props) {
                     Marcar entrada
                 </button>
             )}
-            {fichaje?.hora_entrada && !fichaje?.hora_salida && (
+            {!editando && fichaje?.hora_entrada && !fichaje?.hora_salida && (
                 <button
                     onClick={marcarSalida}
                     className="w-full py-3.5 rounded-xl bg-sky-400 text-slate-900 font-semibold"
@@ -96,9 +125,49 @@ export default function Fichaje({ userId, horariosPorDia }: Props) {
                     Marcar salida
                 </button>
             )}
-            {fichaje?.hora_entrada && fichaje?.hora_salida && (
+            {!editando && fichaje?.hora_entrada && fichaje?.hora_salida && (
                 <div className={`text-center py-2.5 rounded-xl font-semibold ${extra >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
                     Extra de hoy: {formatMinutos(extra)}
+                </div>
+            )}
+
+            {!editando ? (
+                <button
+                    onClick={abrirEdicion}
+                    className="w-full mt-3 text-sm text-slate-400 hover:text-slate-200"
+                >
+                    Corregir horas
+                </button>
+            ) : (
+                <div className="mt-4 space-y-3">
+                    <div className="flex gap-3">
+                        <label className="flex-1 text-xs text-slate-400">
+                            Entrada
+                            <input
+                                type="time"
+                                value={entradaManual}
+                                onChange={(e) => setEntradaManual(e.target.value)}
+                                className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-base text-slate-100"
+                            />
+                        </label>
+                        <label className="flex-1 text-xs text-slate-400">
+                            Salida
+                            <input
+                                type="time"
+                                value={salidaManual}
+                                onChange={(e) => setSalidaManual(e.target.value)}
+                                className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-base text-slate-100"
+                            />
+                        </label>
+                    </div>
+                    <div className="flex gap-2.5">
+                        <button onClick={guardarEdicion} className="flex-1 py-2.5 rounded-xl bg-sky-400 text-slate-900 font-semibold">
+                            Guardar
+                        </button>
+                        <button onClick={() => setEditando(false)} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-200">
+                            Cancelar
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
