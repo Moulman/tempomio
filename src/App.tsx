@@ -5,6 +5,7 @@ import type { HorarioDia } from './lib/schedule'
 import Login from './components/Login'
 import Fichaje from './components/Fichaje'
 import Resumen from './components/Resumen'
+import HorarioBase from './components/HorarioBase'
 
 
 function App() {
@@ -47,6 +48,7 @@ function App() {
       </div>
       <Fichaje userId={session.user.id} horariosPorDia={horariosPorDia} />
       <Resumen horariosPorDia={horariosPorDia} />
+      <HorarioBase userId={session.user.id} horariosPorDia={horariosPorDia} onActualizado={cargarHorarios} />
     </div>
   )
 }
