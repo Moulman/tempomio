@@ -4,6 +4,8 @@ import { supabase } from './supabaseClient'
 import type { HorarioDia } from './lib/schedule'
 import Login from './components/Login'
 import Fichaje from './components/Fichaje'
+import Resumen from './components/Resumen'
+
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -44,6 +46,7 @@ function App() {
         <button onClick={() => supabase.auth.signOut()}>Salir</button>
       </div>
       <Fichaje userId={session.user.id} horariosPorDia={horariosPorDia} />
+      <Resumen horariosPorDia={horariosPorDia} />
     </div>
   )
 }
