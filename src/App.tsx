@@ -1,25 +1,37 @@
 import { useEffect, useState } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabaseClient'
+import Login from './components/Login'
 
 function App() {
-  const [estado, setEstado] = useState('Comprobando conexión...')
+  const [session, setSession] = useState<Session | null>(null)
+  const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
-    async function probarConexion() {
-      const { error } = await supabase.from('fichajes').select('*').limit(1)
-      if (error) {
-        setEstado('Error: ' + error.message)
-      } else {
-        setEstado('✅ Conexión con Supabase correcta')
-      }
-    }
-    probarConexion()
+    // Al arrancar, comprobamos si ya hay una sesión guardada
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setCargando(false)
+    })
+
+    // Nos suscribimos a cambios de sesión (login / logout)
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    // Limpiamos la suscripción al desmontar
+    return () => listener.subscription.unsubscribe()
   }, [])
+
+  if (cargando) return null
+
+  if (!session) return <Login />
 
   return (
     <div style={{ fontFamily: 'sans-serif', padding: 40 }}>
       <h1>TempoMio</h1>
-      <p>{estado}</p>
+      <p>Sesión iniciada como {session.user.email}</p>
+      <button onClick={() => supabase.auth.signOut()}>Salir</button>
     </div>
   )
 }
