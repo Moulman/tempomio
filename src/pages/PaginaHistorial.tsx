@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../supabaseClient'
-import { generarCalendario, extraDelDia, formatMinutos } from '../lib/schedule'
+import { generarCalendario, extraDelDia } from '../lib/schedule'
 import type { Fichaje, HorarioDia } from '../lib/schedule'
 
 interface Props {
