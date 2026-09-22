@@ -1,75 +1,65 @@
-# React + TypeScript + Vite
+# 🕐 TempoMio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> A Progressive Web App to track work clock-in/out and automatically calculate accumulated overtime.
 
-Currently, two official plugins are available:
+**Live demo:** [tempomio.vercel.app](https://tempomio.vercel.app)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+TempoMio digitizes the manual process of signing an attendance sheet. Instead of writing hours on paper or in a notes app, the user taps a button to clock in and out, and the app automatically computes overtime against a configurable base schedule — showing the balance accumulated toward a day off.
 
-## React Compiler
+## ✨ Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **One-tap clock-in / clock-out** — the main screen shows only the relevant action based on the current state
+- **Automatic overtime calculation** — compares actual hours worked against the theoretical base schedule
+- **Weekly & monthly summaries** — see accumulated overtime at a glance, color-coded (green = surplus, red = deficit)
+- **Interactive calendar history** — tap any past day to add or edit its hours; ideal for backfilling
+- **Configurable base schedule** — set working hours per weekday, editable from the app
+- **User profile** — personalized greeting and editable name
+- **Installable as a PWA** — add to home screen on iOS/Android for a native-like experience
+- **Secure by design** — Row Level Security ensures each user only accesses their own data
 
-## Expanding the ESLint configuration
+## 🧱 Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18 + TypeScript |
+| Build tool | Vite |
+| Styling | Tailwind CSS |
+| Routing | React Router |
+| Backend / DB | Supabase (PostgreSQL) |
+| Auth | Supabase Auth |
+| PWA | vite-plugin-pwa |
+| Hosting | Vercel (CI/CD on every push) |
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🏗️ Architecture
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+The app is a single-page application backed by Supabase. Authentication persists the session locally, and all data access is protected by PostgreSQL Row Level Security policies (`auth.uid() = user_id`), so the public API key is safe to expose in the client.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Overtime is calculated on the fly in the client rather than stored, comparing each clock-in against the base schedule for that weekday, then grouped by ISO week and by month.
 
-```
+### Data model
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+- `perfiles` — user profile (id linked to `auth.users`, name)
+- `horarios_base` — theoretical schedule per weekday
+- `fichajes` — actual clock-in/out records, one per day
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🚀 Getting Started
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+​```bash
+# Clone and install
+git clone https://github.com/Moulman/tempomio.git
+cd tempomio
+npm install
 
-```
+# Configure environment
+cp .env.example .env
+# Add your Supabase URL and anon key to .env
+
+# Run
+npm run dev
+​```
+
+Then run the SQL in `supabase/schema.sql` in your Supabase project to create the tables and policies.
+
+## 📄 License
+
+Personal project — free to explore and learn from.
