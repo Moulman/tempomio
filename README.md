@@ -14,6 +14,7 @@ TempoMio digitizes the manual process of signing an attendance sheet. Instead of
 - **Interactive calendar history** — tap any past day to add or edit its hours; ideal for backfilling
 - **Configurable base schedule** — set working hours per weekday, editable from the app
 - **User profile** — personalized greeting and editable name
+- **Request access** — visitors without an account can leave their email from the login screen; no self-service sign-up yet, accounts are still created by hand in Supabase
 - **Installable as a PWA** — add to home screen on iOS/Android for a native-like experience
 - **Secure by design** — Row Level Security ensures each user only accesses their own data
 
@@ -41,6 +42,7 @@ Overtime is calculated on the fly in the client rather than stored, comparing ea
 - `perfiles` — user profile (id linked to `auth.users`, name)
 - `horarios_base` — theoretical schedule per weekday
 - `fichajes` — actual clock-in/out records, one per day
+- `solicitudes_acceso` — emails left via "Solicitar acceso" on the login screen; anyone can insert, nobody can read from the client (check it from the Supabase dashboard)
 
 ## 🚀 Getting Started
 

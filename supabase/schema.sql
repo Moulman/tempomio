@@ -35,6 +35,13 @@ create table if not exists fichajes (
   unique (user_id, fecha)
 );
 
+-- ---------- Table: public access requests (waitlist for onboarding) ----------
+create table if not exists solicitudes_acceso (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  created_at timestamptz not null default now()
+);
+
 -- ---------- Trigger: keep updated_at fresh on fichajes ----------
 create or replace function set_updated_at()
 returns trigger as $$
@@ -55,6 +62,7 @@ create trigger trg_fichajes_updated_at
 alter table perfiles enable row level security;
 alter table horarios_base enable row level security;
 alter table fichajes enable row level security;
+alter table solicitudes_acceso enable row level security;
 
 -- Policies: perfiles
 create policy "perfiles_select_own" on perfiles
@@ -83,3 +91,13 @@ create policy "fichajes_update_own" on fichajes
   for update using (auth.uid() = user_id);
 create policy "fichajes_delete_own" on fichajes
   for delete using (auth.uid() = user_id);
+
+-- Policies: solicitudes_acceso
+-- Anyone (including anonymous visitors on the login screen) can submit a
+-- request. No select/update/delete policy is defined, so the request list
+-- is only readable from the Supabase dashboard (or the service role),
+-- never from the public anon client.
+create policy "solicitudes_acceso_insert_public" on solicitudes_acceso
+  for insert
+  to anon, authenticated
+  with check (true);
