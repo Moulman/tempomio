@@ -22,6 +22,8 @@ export default function Fichaje({ userId, horariosPorDia }: Props) {
     const [editando, setEditando] = useState(false)
     const [entradaManual, setEntradaManual] = useState('')
     const [salidaManual, setSalidaManual] = useState('')
+    const [editandoNota, setEditandoNota] = useState(false)
+    const [notaManual, setNotaManual] = useState('')
 
     useEffect(() => {
         cargarFichajeHoy()
@@ -86,6 +88,24 @@ export default function Fichaje({ userId, horariosPorDia }: Props) {
         }
     }
 
+    function abrirNota() {
+        setNotaManual(fichaje?.nota || '')
+        setEditandoNota(true)
+    }
+
+    async function guardarNota() {
+        const { data, error } = await supabase
+            .from('fichajes')
+            .update({ nota: notaManual || null })
+            .eq('fecha', fechaHoy())
+            .select()
+            .single()
+        if (!error) {
+            setFichaje(data)
+            setEditandoNota(false)
+        }
+    }
+
     if (cargando) return <p>Cargando...</p>
 
     const hoy = new Date()
@@ -128,6 +148,40 @@ export default function Fichaje({ userId, horariosPorDia }: Props) {
             {!editando && fichaje?.hora_entrada && fichaje?.hora_salida && (
                 <div className={`text-center py-2.5 rounded-xl font-semibold ${extra >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
                     Extra de hoy: {formatMinutos(extra)}
+                </div>
+            )}
+
+            {!editando && fichaje?.hora_entrada && !editandoNota && (
+                <div className="mt-4">
+                    {fichaje?.nota && (
+                        <p className="text-sm text-slate-300 bg-slate-900 rounded-lg px-3 py-2 mb-2">{fichaje.nota}</p>
+                    )}
+                    <button
+                        onClick={abrirNota}
+                        className="w-full text-sm text-slate-400 hover:text-slate-200"
+                    >
+                        {fichaje?.nota ? 'Editar nota' : 'Añadir nota'}
+                    </button>
+                </div>
+            )}
+
+            {editandoNota && (
+                <div className="mt-4 space-y-3">
+                    <textarea
+                        value={notaManual}
+                        onChange={(e) => setNotaManual(e.target.value)}
+                        placeholder="¿Por qué te quedaste hasta tarde?"
+                        rows={2}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100"
+                    />
+                    <div className="flex gap-2.5">
+                        <button onClick={guardarNota} className="flex-1 py-2.5 rounded-xl bg-sky-400 text-slate-900 font-semibold">
+                            Guardar
+                        </button>
+                        <button onClick={() => setEditandoNota(false)} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-200">
+                            Cancelar
+                        </button>
+                    </div>
                 </div>
             )}
 

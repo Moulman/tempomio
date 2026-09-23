@@ -23,6 +23,7 @@ export default function PaginaHistorial({ session, horariosPorDia }: Props) {
     const [diaSel, setDiaSel] = useState<string | null>(null)
     const [entradaManual, setEntradaManual] = useState('')
     const [salidaManual, setSalidaManual] = useState('')
+    const [notaManual, setNotaManual] = useState('')
     const [guardando, setGuardando] = useState(false)
 
     useEffect(() => {
@@ -50,6 +51,7 @@ export default function PaginaHistorial({ session, horariosPorDia }: Props) {
         const f = fichajes[fecha]
         setEntradaManual(f?.hora_entrada?.slice(0, 5) || '')
         setSalidaManual(f?.hora_salida?.slice(0, 5) || '')
+        setNotaManual(f?.nota || '')
     }
 
     async function guardarDia() {
@@ -63,6 +65,7 @@ export default function PaginaHistorial({ session, horariosPorDia }: Props) {
                     fecha: diaSel,
                     hora_entrada: entradaManual || null,
                     hora_salida: salidaManual || null,
+                    nota: notaManual || null,
                 },
                 { onConflict: 'user_id,fecha' }
             )
@@ -121,13 +124,16 @@ export default function PaginaHistorial({ session, horariosPorDia }: Props) {
                             <button
                                 key={fecha}
                                 onClick={() => seleccionarDia(fecha)}
-                                className={`aspect-square rounded-lg flex flex-col items-center justify-center text-sm
+                                className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm
                   ${seleccionado ? 'ring-2 ring-sky-400' : ''}
                   ${tieneFichaje
                                         ? extra >= 0 ? 'bg-green-500/15 text-green-300' : 'bg-red-500/15 text-red-300'
                                         : 'bg-slate-900 text-slate-400'}`}
                             >
                                 <span>{dia}</span>
+                                {fichaje?.nota && (
+                                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-sky-400" />
+                                )}
                             </button>
                         )
                     })}
@@ -160,6 +166,16 @@ export default function PaginaHistorial({ session, horariosPorDia }: Props) {
                             />
                         </label>
                     </div>
+                    <label className="block text-xs text-slate-400 mb-4">
+                        Nota
+                        <textarea
+                            value={notaManual}
+                            onChange={(e) => setNotaManual(e.target.value)}
+                            placeholder="Motivo (opcional)"
+                            rows={2}
+                            className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-sm text-slate-100"
+                        />
+                    </label>
                     <div className="flex gap-2.5">
                         <button onClick={guardarDia} disabled={guardando} className="flex-1 py-2.5 rounded-xl bg-sky-400 text-slate-900 font-semibold">
                             {guardando ? 'Guardando...' : 'Guardar'}
