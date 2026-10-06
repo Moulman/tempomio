@@ -38,6 +38,7 @@ export default function PaginaHistorial({ session, horariosPorDia }: Props) {
         const { data } = await supabase
             .from('fichajes')
             .select('*')
+            .eq('user_id', session.user.id)
             .gte('fecha', desde)
             .lte('fecha', hasta)
 

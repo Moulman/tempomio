@@ -1,0 +1,127 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import type { Session } from '@supabase/supabase-js'
+import { supabase } from '../supabaseClient'
+import { MAX_LONGITUD_IDEA, PRIORIDADES } from '../lib/sugerencias'
+import type { Prioridad } from '../lib/sugerencias'
+
+interface Props {
+    session: Session
+}
+
+const PLACEHOLDERS: Record<Prioridad, string> = {
+    lo_necesito: 'Cuéntame qué echas de menos cada día...',
+    estaria_guay: 'Sueña a lo grande: ¿qué haría TempoMio más chulo?',
+    bug: '¿Qué ha pasado? ¿Qué esperabas que pasara?',
+}
+
+export default function PaginaIdeas({ session }: Props) {
+    const [prioridad, setPrioridad] = useState<Prioridad>('estaria_guay')
+    const [texto, setTexto] = useState('')
+    const [enviando, setEnviando] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [enviada, setEnviada] = useState(false)
+
+    async function enviar(e: React.FormEvent) {
+        e.preventDefault()
+        if (!texto.trim()) return
+
+        setEnviando(true)
+        setError(null)
+        const { error } = await supabase.from('sugerencias').insert({
+            user_id: session.user.id,
+            prioridad,
+            texto: texto.trim(),
+        })
+        setEnviando(false)
+
+        if (error) {
+            setError('No se ha podido enviar. Inténtalo de nuevo en un momento.')
+            return
+        }
+        setEnviada(true)
+    }
+
+    function otraIdea() {
+        setTexto('')
+        setPrioridad('estaria_guay')
+        setEnviada(false)
+    }
+
+    return (
+        <div className="max-w-md mx-auto px-4 py-6">
+            <div className="flex justify-between items-center mb-4">
+                <h1 className="text-2xl font-semibold">Ideas</h1>
+                <Link to="/" className="text-sm text-sky-400 hover:text-sky-300">← Volver</Link>
+            </div>
+
+            <div className="bg-slate-800 rounded-2xl p-5">
+                {enviada ? (
+                    <div className="text-center py-6">
+                        <div className="text-5xl mb-3">🚀</div>
+                        <p className="text-lg font-semibold">¡Recibido!</p>
+                        <p className="text-sm text-slate-400 mt-1">Si es buena, la verás pronto 🚀</p>
+                        <button onClick={otraIdea} className="mt-5 text-sm text-sky-400 hover:text-sky-300">
+                            Tengo otra idea
+                        </button>
+                    </div>
+                ) : (
+                    <form onSubmit={enviar}>
+                        <h2 className="text-lg font-semibold">¿Qué le falta a TempoMio? 🤔</h2>
+                        <p className="text-sm text-slate-400 mt-1 mb-4">
+                            Ideas, caprichos o cosas que no funcionan: todo vale.
+                        </p>
+
+                        <div className="grid grid-cols-3 gap-2 mb-4" role="radiogroup" aria-label="Prioridad">
+                            {PRIORIDADES.map((p) => {
+                                const activa = prioridad === p.valor
+                                return (
+                                    <button
+                                        key={p.valor}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={activa}
+                                        onClick={() => setPrioridad(p.valor)}
+                                        className={`rounded-xl border px-2 py-3 text-center transition-all ${activa
+                                            ? 'border-sky-400 bg-sky-400/10 scale-105'
+                                            : 'border-slate-700 hover:border-slate-500'}`}
+                                    >
+                                        <span className="block text-2xl">{p.emoji}</span>
+                                        <span className={`block text-xs mt-1 ${activa ? 'text-slate-100' : 'text-slate-400'}`}>
+                                            {p.titulo}
+                                        </span>
+                                    </button>
+                                )
+                            })}
+                        </div>
+
+                        <textarea
+                            value={texto}
+                            onChange={(e) => setTexto(e.target.value)}
+                            placeholder={PLACEHOLDERS[prioridad]}
+                            rows={5}
+                            maxLength={MAX_LONGITUD_IDEA}
+                            required
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                        />
+                        <p className="text-xs text-slate-500 text-right mt-1">
+                            {texto.length}/{MAX_LONGITUD_IDEA}
+                        </p>
+
+                        {error && (
+                            <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2 mt-2">{error}</p>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={enviando || !texto.trim()}
+                            className="w-full mt-3 py-3 rounded-xl bg-sky-400 text-slate-900 font-semibold disabled:opacity-60"
+                        >
+                            {enviando ? 'Enviando...' : 'Enviar idea'}
+                        </button>
+                    </form>
+                )}
+            </div>
+        </div>
+    )
+}

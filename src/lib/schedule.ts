@@ -25,6 +25,37 @@ export interface ResumenMes {
 
 type HorariosPorDia = (HorarioDia | null)[]
 
+// ---------- Fechas (hora local, nunca UTC) ----------
+
+// Date → "YYYY-MM-DD" usando la zona horaria local
+export function fechaLocal(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+// Lunes (YYYY-MM-DD) de la semana de una fecha
+export function lunesDeSemana(d: Date): string {
+    const lunes = new Date(d)
+    lunes.setDate(d.getDate() - (d.getDay() + 6) % 7)
+    return fechaLocal(lunes)
+}
+
+// ---------- Racha ----------
+
+// Días consecutivos con fichaje contando hacia atrás desde hoy.
+// Si hoy aún no hay fichaje, la racha de ayer se mantiene hasta que acabe el día.
+export function calcularRacha(fechasConFichaje: Iterable<string>, hoy: Date = new Date()): number {
+    const fechas = new Set(fechasConFichaje)
+    const cursor = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+    if (!fechas.has(fechaLocal(cursor))) cursor.setDate(cursor.getDate() - 1)
+
+    let racha = 0
+    while (fechas.has(fechaLocal(cursor))) {
+        racha++
+        cursor.setDate(cursor.getDate() - 1)
+    }
+    return racha
+}
+
 // ---------- Cálculo ----------
 
 function aMinutos(hora: string | null): number | null {

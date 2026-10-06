@@ -4,10 +4,11 @@ import { agruparPorSemana, agruparPorMes, formatMinutos } from '../lib/schedule'
 import type { Fichaje, HorarioDia } from '../lib/schedule'
 
 interface Props {
+    userId: string
     horariosPorDia: (HorarioDia | null)[]
 }
 
-export default function Resumen({ horariosPorDia }: Props) {
+export default function Resumen({ userId, horariosPorDia }: Props) {
     const [fichajes, setFichajes] = useState<Fichaje[]>([])
     const [vista, setVista] = useState<'semana' | 'mes'>('semana')
     const [cargando, setCargando] = useState(true)
@@ -25,6 +26,7 @@ export default function Resumen({ horariosPorDia }: Props) {
         const { data } = await supabase
             .from('fichajes')
             .select('*')
+            .eq('user_id', userId)
             .gte('fecha', desde.toISOString().slice(0, 10))
             .order('fecha', { ascending: false })
 

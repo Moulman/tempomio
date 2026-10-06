@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
-import { extraDelDia, formatMinutos } from '../lib/schedule'
+import { extraDelDia, fechaLocal, formatMinutos } from '../lib/schedule'
 import type { Fichaje as FichajeType, HorarioDia } from '../lib/schedule'
 
 interface Props {
     userId: string
     horariosPorDia: (HorarioDia | null)[]
+    // Se llama al marcar entrada o editar el fichaje de hoy (p. ej. para recalcular la racha)
+    onCambio?: () => void
 }
 
 function horaActual(): string {
@@ -13,10 +15,10 @@ function horaActual(): string {
 }
 
 function fechaHoy(): string {
-    return new Date().toISOString().slice(0, 10) // "YYYY-MM-DD"
+    return fechaLocal(new Date()) // "YYYY-MM-DD" en hora local (toISOString daría la fecha UTC)
 }
 
-export default function Fichaje({ userId, horariosPorDia }: Props) {
+export default function Fichaje({ userId, horariosPorDia, onCambio }: Props) {
     const [fichaje, setFichaje] = useState<FichajeType | null>(null)
     const [cargando, setCargando] = useState(true)
     const [editando, setEditando] = useState(false)
@@ -34,6 +36,7 @@ export default function Fichaje({ userId, horariosPorDia }: Props) {
         const { data } = await supabase
             .from('fichajes')
             .select('*')
+            .eq('user_id', userId)
             .eq('fecha', fechaHoy())
             .maybeSingle()
         setFichaje(data)
@@ -49,13 +52,17 @@ export default function Fichaje({ userId, horariosPorDia }: Props) {
             )
             .select()
             .single()
-        if (!error) setFichaje(data)
+        if (!error) {
+            setFichaje(data)
+            onCambio?.()
+        }
     }
 
     async function marcarSalida() {
         const { data, error } = await supabase
             .from('fichajes')
             .update({ hora_salida: horaActual() })
+            .eq('user_id', userId)
             .eq('fecha', fechaHoy())
             .select()
             .single()
@@ -85,6 +92,7 @@ export default function Fichaje({ userId, horariosPorDia }: Props) {
         if (!error) {
             setFichaje(data)
             setEditando(false)
+            onCambio?.()
         }
     }
 
@@ -97,6 +105,7 @@ export default function Fichaje({ userId, horariosPorDia }: Props) {
         const { data, error } = await supabase
             .from('fichajes')
             .update({ nota: notaManual || null })
+            .eq('user_id', userId)
             .eq('fecha', fechaHoy())
             .select()
             .single()
