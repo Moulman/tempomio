@@ -11,6 +11,7 @@ import PaginaIdeas from './pages/PaginaIdeas'
 import PaginaAdmin from './pages/PaginaAdmin'
 import Estructura from './components/Estructura'
 import { useTema } from './lib/tema'
+import { useFichajeHoy } from './lib/fichajeHoy'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -20,6 +21,7 @@ function App() {
   const [perfilCargado, setPerfilCargado] = useState(false)
   const [horariosPorDia, setHorariosPorDia] = useState<(HorarioDia | null)[]>(Array(7).fill(null))
   const { tema, alternarTema } = useTema()
+  const fichajeHoy = useFichajeHoy(session?.user.id ?? null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -64,7 +66,7 @@ function App() {
   if (!session) return <Login />
 
   return (
-    <Estructura esAdmin={esAdmin} tema={tema} onAlternarTema={alternarTema}>
+    <Estructura esAdmin={esAdmin} tema={tema} onAlternarTema={alternarTema} fichajeHoy={fichajeHoy}>
       <Routes>
         <Route
           path="/"
@@ -73,7 +75,7 @@ function App() {
               session={session}
               nombre={nombre}
               horariosPorDia={horariosPorDia}
-              onHorariosActualizados={() => cargarHorarios(session.user.id)}
+              fichajeHoy={fichajeHoy}
             />
           }
         />
@@ -85,6 +87,8 @@ function App() {
               nombre={nombre}
               tema={tema}
               onAlternarTema={alternarTema}
+              horariosPorDia={horariosPorDia}
+              onHorariosActualizados={() => cargarHorarios(session.user.id)}
               onPerfilActualizado={() => cargarPerfil(session.user.id)}
             />
           }
@@ -95,6 +99,7 @@ function App() {
             <PaginaHistorial
               session={session}
               horariosPorDia={horariosPorDia}
+              onDiaGuardado={fichajeHoy.recargar}
             />
           }
         />

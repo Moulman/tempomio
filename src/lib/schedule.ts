@@ -80,6 +80,26 @@ export function extraDelDia(fichaje: Fichaje, horario: HorarioDia | null): numbe
     return real - teorico
 }
 
+// Segundos desde una hora "HH:MM" o "HH:MM:SS" de hoy hasta `ahora` (nunca negativo)
+export function segundosDesde(hora: string, ahora: Date): number {
+    const [h, m, s = 0] = hora.split(':').map(Number)
+    const inicio = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), h, m, s)
+    return Math.max(0, Math.floor((ahora.getTime() - inicio.getTime()) / 1000))
+}
+
+// 3725 → "01:02:05"
+export function formatReloj(segundos: number): string {
+    const h = Math.floor(segundos / 3600)
+    const m = Math.floor((segundos % 3600) / 60)
+    const s = segundos % 60
+    return [h, m, s].map((n) => String(n).padStart(2, '0')).join(':')
+}
+
+// Duración sin signo: 450 → "7h 30min"
+export function formatDuracion(mins: number): string {
+    return formatMinutos(Math.abs(mins)).slice(1)
+}
+
 export function formatMinutos(mins: number): string {
     const signo = mins < 0 ? '-' : '+'
     const abs = Math.abs(mins)

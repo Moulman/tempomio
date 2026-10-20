@@ -1,7 +1,11 @@
+import { useEffect, useState } from 'react'
 import type { ComponentType, ReactNode, SVGProps } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import type { Tema } from '../lib/tema'
+import { formatReloj, segundosDesde } from '../lib/schedule'
+import { useAhora } from '../lib/fichajeHoy'
+import type { FichajeHoy } from '../lib/fichajeHoy'
 import {
     IconoAdmin, IconoHistorial, IconoHoy, IconoIdeas, IconoLuna, IconoPerfil, IconoSalir, IconoSol, Marca,
 } from './Iconos'
@@ -10,6 +14,7 @@ interface Props {
     esAdmin: boolean
     tema: Tema
     onAlternarTema: () => void
+    fichajeHoy: FichajeHoy
     children: ReactNode
 }
 
@@ -20,7 +25,25 @@ interface Seccion {
 }
 
 // Barra lateral en escritorio (md+) y barra inferior en móvil, con las mismas secciones
-export default function Estructura({ esAdmin, tema, onAlternarTema, children }: Props) {
+export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, children }: Props) {
+    const { fichaje, enCurso, marcarSalida } = fichajeHoy
+    const ahora = useAhora(enCurso)
+    const { pathname } = useLocation()
+    const [saliendo, setSaliendo] = useState(false)
+
+    // Mientras hay turno abierto, el tiempo se ve en la navegación y en el título de la pestaña
+    const reloj = enCurso && fichaje?.hora_entrada ? formatReloj(segundosDesde(fichaje.hora_entrada, ahora)) : null
+
+    useEffect(() => {
+        document.title = reloj ? `${reloj} · TempoMio` : 'TempoMio'
+    }, [reloj])
+
+    async function salirDesdeBarra() {
+        setSaliendo(true)
+        await marcarSalida()
+        setSaliendo(false)
+    }
+
     const secciones: Seccion[] = [
         { ruta: '/', titulo: 'Hoy', Icono: IconoHoy },
         { ruta: '/historial', titulo: 'Historial', Icono: IconoHistorial },
@@ -51,7 +74,8 @@ export default function Estructura({ esAdmin, tema, onAlternarTema, children }: 
                                     : 'text-tinta-suave hover:bg-realce hover:text-tinta'}`}
                         >
                             <Icono />
-                            {titulo}
+                            {ruta === '/' && reloj ? <span className="tabular-nums">{reloj}</span> : titulo}
+                            {ruta === '/' && reloj && <span className="ml-auto w-2 h-2 rounded-full bg-acento animate-pulse" />}
                         </NavLink>
                     ))}
                 </nav>
@@ -76,6 +100,23 @@ export default function Estructura({ esAdmin, tema, onAlternarTema, children }: 
 
             {/* ---------- Contenido ---------- */}
             <main className="md:pl-60 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
+                {/* Turno abierto y fuera de Hoy: barra fina con el tiempo y la salida a mano */}
+                {reloj && pathname !== '/' && (
+                    <div className="sticky top-0 z-10 bg-superficie/95 backdrop-blur border-b border-linea pt-[env(safe-area-inset-top)]">
+                        <div className="max-w-3xl mx-auto px-4 md:px-8 py-2.5 flex items-center gap-3">
+                            <span className="w-2 h-2 rounded-full bg-acento animate-pulse" />
+                            <span className="text-sm text-tinta-suave">En turno</span>
+                            <span className="font-semibold tabular-nums">{reloj}</span>
+                            <button
+                                onClick={salirDesdeBarra}
+                                disabled={saliendo}
+                                className="ml-auto px-3.5 py-1.5 rounded-lg bg-tinta text-superficie text-sm font-semibold disabled:opacity-60"
+                            >
+                                Marcar salida
+                            </button>
+                        </div>
+                    </div>
+                )}
                 {children}
             </main>
 
@@ -92,7 +133,7 @@ export default function Estructura({ esAdmin, tema, onAlternarTema, children }: 
                                 : 'text-tinta-tenue'}`}
                     >
                         <Icono />
-                        {titulo}
+                        {ruta === '/' && reloj ? <span className="tabular-nums text-acento">{reloj}</span> : titulo}
                     </NavLink>
                 ))}
             </nav>

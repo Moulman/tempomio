@@ -7,12 +7,14 @@ import type { Fichaje, HorarioDia } from '../lib/schedule'
 interface Props {
     session: Session
     horariosPorDia: (HorarioDia | null)[]
+    // Avisa a la app de que ha cambiado un día (por si es hoy y corre el cronómetro)
+    onDiaGuardado: () => void
 }
 
 const DIAS_SEMANA = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
-export default function PaginaHistorial({ session, horariosPorDia }: Props) {
+export default function PaginaHistorial({ session, horariosPorDia, onDiaGuardado }: Props) {
     const hoy = new Date()
     const [anio, setAnio] = useState(hoy.getFullYear())
     const [mes, setMes] = useState(hoy.getMonth())
@@ -75,6 +77,7 @@ export default function PaginaHistorial({ session, horariosPorDia }: Props) {
         if (!error) {
             setRecarga((n) => n + 1)
             setDiaSel(null)
+            onDiaGuardado()
         }
     }
 

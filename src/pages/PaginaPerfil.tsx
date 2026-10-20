@@ -2,6 +2,8 @@ import { useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../supabaseClient'
 import type { Tema } from '../lib/tema'
+import type { HorarioDia } from '../lib/schedule'
+import HorarioBase from '../components/HorarioBase'
 import { IconoLuna, IconoSalir, IconoSol } from '../components/Iconos'
 
 interface Props {
@@ -9,10 +11,14 @@ interface Props {
     nombre: string | null
     tema: Tema
     onAlternarTema: () => void
+    horariosPorDia: (HorarioDia | null)[]
+    onHorariosActualizados: () => void
     onPerfilActualizado: () => void
 }
 
-export default function PaginaPerfil({ session, nombre, tema, onAlternarTema, onPerfilActualizado }: Props) {
+export default function PaginaPerfil({
+    session, nombre, tema, onAlternarTema, horariosPorDia, onHorariosActualizados, onPerfilActualizado,
+}: Props) {
     const [valor, setValor] = useState(nombre || '')
     const [guardando, setGuardando] = useState(false)
     const [guardado, setGuardado] = useState(false)
@@ -54,6 +60,10 @@ export default function PaginaPerfil({ session, nombre, tema, onAlternarTema, on
                     {guardando ? 'Guardando...' : 'Guardar'}
                 </button>
                 {guardado && <p className="text-positivo text-sm text-center mt-2">Guardado ✓</p>}
+            </div>
+
+            <div className="mt-4">
+                <HorarioBase userId={session.user.id} horariosPorDia={horariosPorDia} onActualizado={onHorariosActualizados} />
             </div>
 
             {/* ---------- Apariencia ---------- */}
