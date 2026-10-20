@@ -134,7 +134,10 @@ alter table sugerencias enable row level security;
 -- ---------- perfiles ----------
 drop policy if exists "perfiles_select_own" on perfiles;
 create policy "perfiles_select_own" on perfiles
-  for select using (auth.uid() = id or es_admin());
+  for select using (auth.uid() = id);
+drop policy if exists "perfiles_select_admin" on perfiles;
+create policy "perfiles_select_admin" on perfiles
+  for select using (es_admin());
 drop policy if exists "perfiles_insert_own" on perfiles;
 create policy "perfiles_insert_own" on perfiles
   for insert with check (auth.uid() = id);
