@@ -35,14 +35,17 @@ TempoMio digitizes the manual process of signing an attendance sheet. Instead of
 
 The app is a single-page application backed by Supabase. Authentication persists the session locally, and all data access is protected by PostgreSQL Row Level Security policies (`auth.uid() = user_id`), so the public API key is safe to expose in the client.
 
-Overtime is calculated on the fly in the client rather than stored, comparing each clock-in against the base schedule for that weekday, then grouped by ISO week and by month.
+Overtime is calculated on the fly in the client rather than stored, comparing each clock-in against the base schedule for that weekday, then summed per week and per month.
 
 ### Data model
 
-- `perfiles` — user profile (id linked to `auth.users`, name)
+- `perfiles` — user profile (id linked to `auth.users`, name, `es_admin`)
 - `horarios_base` — theoretical schedule per weekday
 - `fichajes` — actual clock-in/out records, one per day
-- `solicitudes_acceso` — emails left via "Solicitar acceso" on the login screen; anyone can insert, nobody can read from the client (check it from the Supabase dashboard)
+- `solicitudes_acceso` — waitlist left via "Solicitar acceso" on the login screen; anyone can insert, only admins can read and approve/reject it
+- `sugerencias` — ideas sent from the Ideas page; each user inserts their own, only admins can read them
+
+Admins (`perfiles.es_admin = true`, set from the Supabase dashboard) can read every user's data for the admin panel through the `es_admin()` function in the RLS policies. Database changes live as SQL files in `supabase/migrations/`.
 
 ## 🚀 Getting Started
 
@@ -60,7 +63,7 @@ cp .env.example .env
 npm run dev
 ​```
 
-Then run the SQL in `supabase/schema.sql` in your Supabase project to create the tables and policies.
+Then run the SQL in `supabase/schema.sql` in your Supabase project to create the tables and policies. The file was rebuilt from the code, so review it against an existing project before applying it there.
 
 ## 📄 License
 
