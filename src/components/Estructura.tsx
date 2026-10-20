@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import type { ComponentType, ReactNode, SVGProps } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import type { Tema } from '../lib/tema'
-import { formatReloj, segundosDesde } from '../lib/schedule'
+import { formatReloj, minutosTrabajados, segundosDesde } from '../lib/schedule'
+import type { HorarioDia } from '../lib/schedule'
 import { useAhora } from '../lib/fichajeHoy'
 import type { FichajeHoy } from '../lib/fichajeHoy'
 import {
-    IconoAdmin, IconoHistorial, IconoHoy, IconoIdeas, IconoLuna, IconoPerfil, IconoSalir, IconoSemana, IconoSol, Marca,
+    IconoAdmin, IconoBolsa, IconoHistorial, IconoHoy, IconoIdeas, IconoLuna, IconoPerfil, IconoSalir, IconoSemana, IconoSol, Marca,
 } from './Iconos'
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
     tema: Tema
     onAlternarTema: () => void
     fichajeHoy: FichajeHoy
+    horariosPorDia: (HorarioDia | null)[]
     children: ReactNode
 }
 
@@ -22,15 +24,16 @@ interface Seccion {
     ruta: string
     titulo: string
     Icono: ComponentType<SVGProps<SVGSVGElement>>
-    // Fuera de la barra inferior del móvil (para no pasar de 5 iconos); en móvil se llega desde Perfil
+    // Fuera de la barra inferior del móvil (para no pasar de 5 iconos); en móvil se llega desde Perfil o Hoy
     soloEscritorio?: boolean
 }
 
 // Barra lateral en escritorio (md+) y barra inferior en móvil, con las mismas secciones
-export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, children }: Props) {
+export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, horariosPorDia, children }: Props) {
     const { fichaje, enCurso, marcarSalida } = fichajeHoy
     const ahora = useAhora(enCurso)
     const { pathname } = useLocation()
+    const navigate = useNavigate()
     const [saliendo, setSaliendo] = useState(false)
 
     // Mientras hay turno abierto, el tiempo se ve en la navegación y en el título de la pestaña
@@ -41,6 +44,14 @@ export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, 
     }, [reloj])
 
     async function salirDesdeBarra() {
+        // Antes de tu hora: a Hoy, donde se pregunta si cubrirlo con la bolsa
+        const h = horariosPorDia[new Date().getDay()]
+        const previsto = h?.activo ? minutosTrabajados(h.hora_entrada, h.hora_salida) : 0
+        const trabajado = fichaje?.hora_entrada ? Math.floor(segundosDesde(fichaje.hora_entrada, new Date()) / 60) : 0
+        if (previsto - trabajado - (fichaje?.bolsa_minutos ?? 0) > 0) {
+            navigate('/')
+            return
+        }
         setSaliendo(true)
         await marcarSalida()
         setSaliendo(false)
@@ -50,6 +61,7 @@ export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, 
         { ruta: '/', titulo: 'Hoy', Icono: IconoHoy },
         { ruta: '/semana', titulo: 'Semana', Icono: IconoSemana },
         { ruta: '/historial', titulo: 'Historial', Icono: IconoHistorial },
+        { ruta: '/bolsa', titulo: 'Bolsa de horas', Icono: IconoBolsa, soloEscritorio: true },
         { ruta: '/ideas', titulo: 'Ideas', Icono: IconoIdeas, soloEscritorio: true },
         { ruta: '/perfil', titulo: 'Perfil', Icono: IconoPerfil },
         ...(esAdmin ? [{ ruta: '/admin', titulo: 'Admin', Icono: IconoAdmin }] : []),

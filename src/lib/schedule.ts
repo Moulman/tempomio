@@ -5,6 +5,8 @@ export interface Fichaje {
     hora_entrada: string | null
     hora_salida: string | null
     nota?: string | null
+    // Minutos de la bolsa de horas usados ese día (salir antes o día libre)
+    bolsa_minutos?: number | null
 }
 
 export interface HorarioDia {
@@ -77,9 +79,12 @@ export function minutosTrabajados(entrada: string | null, salida: string | null)
     return s >= e ? s - e : (24 * 60 - e) + s
 }
 
+// Extra de un día completo frente al horario. Las horas de bolsa usadas cuentan
+// como trabajadas: salir 2h antes usando 2h de bolsa deja el día en 0.
+// Un día sin entrada o sin salida no cuenta (0), aunque tenga bolsa apuntada.
 export function extraDelDia(fichaje: Fichaje, horario: HorarioDia | null): number {
     if (!fichaje.hora_entrada || !fichaje.hora_salida) return 0
-    const real = minutosTrabajados(fichaje.hora_entrada, fichaje.hora_salida)
+    const real = minutosTrabajados(fichaje.hora_entrada, fichaje.hora_salida) + (fichaje.bolsa_minutos ?? 0)
     const teorico = horario && horario.activo
         ? minutosTrabajados(horario.hora_entrada, horario.hora_salida)
         : 0

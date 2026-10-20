@@ -18,10 +18,11 @@ function celda(valor: string): string {
 // CSV de un mes: una fila por día fichado y una fila final de totales.
 // Separador ";" y BOM para que Excel en español lo abra con columnas y acentos correctos.
 export function csvDelMes(fichajes: Fichaje[], horariosPorDia: (HorarioDia | null)[]): string {
-    const filas: string[][] = [['Fecha', 'Día', 'Entrada', 'Salida', 'Trabajado', 'Previsto', 'Extra', 'Nota']]
+    const filas: string[][] = [['Fecha', 'Día', 'Entrada', 'Salida', 'Trabajado', 'Bolsa usada', 'Previsto', 'Extra', 'Nota']]
     let totalTrabajado = 0
     let totalPrevisto = 0
     let totalExtra = 0
+    let totalBolsa = 0
 
     for (const f of [...fichajes].sort((a, b) => a.fecha.localeCompare(b.fecha))) {
         const d = new Date(f.fecha + 'T00:00:00')
@@ -30,6 +31,8 @@ export function csvDelMes(fichajes: Fichaje[], horariosPorDia: (HorarioDia | nul
         const completo = !!f.hora_entrada && !!f.hora_salida
         const trabajado = completo ? minutosTrabajados(f.hora_entrada, f.hora_salida) : 0
         const extra = completo ? extraDelDia(f, horario) : 0
+        const bolsa = f.bolsa_minutos ?? 0
+        totalBolsa += bolsa
         if (completo) {
             totalTrabajado += trabajado
             totalPrevisto += previsto
@@ -41,13 +44,14 @@ export function csvDelMes(fichajes: Fichaje[], horariosPorDia: (HorarioDia | nul
             f.hora_entrada?.slice(0, 5) ?? '',
             f.hora_salida?.slice(0, 5) ?? '',
             completo ? hm(trabajado) : '',
+            bolsa ? hm(bolsa) : '',
             hm(previsto),
             completo ? hm(extra) : '',
             f.nota ?? '',
         ])
     }
 
-    filas.push(['Total', '', '', '', hm(totalTrabajado), hm(totalPrevisto), hm(totalExtra), ''])
+    filas.push(['Total', '', '', '', hm(totalTrabajado), hm(totalBolsa), hm(totalPrevisto), hm(totalExtra), ''])
     return '﻿' + filas.map((fila) => fila.map(celda).join(';')).join('\r\n') + '\r\n'
 }
 

@@ -78,10 +78,11 @@ export default function PaginaSemana({ session, horariosPorDia, onDiaGuardado }:
         return h?.activo ? h : null
     }
 
-    // Días ya pasados de esta semana, con horario y sin nada fichado: se pueden rellenar con el horario base
+    // Días ya pasados de esta semana, con horario y sin nada fichado ni bolsa usada:
+    // se pueden rellenar con el horario base
     const rellenables = dias.filter((fecha) => {
         const f = fichajes[fecha]
-        return fecha < hoy && horarioDe(fecha) && !f?.hora_entrada && !f?.hora_salida
+        return fecha < hoy && horarioDe(fecha) && !f?.hora_entrada && !f?.hora_salida && !f?.bolsa_minutos
     })
 
     async function rellenarConHorario() {
@@ -180,11 +181,13 @@ export default function PaginaSemana({ session, horariosPorDia, onDiaGuardado }:
                     const completo = !!f?.hora_entrada && !!f?.hora_salida
                     const enCurso = fecha === hoy && !!f?.hora_entrada && !f?.hora_salida
                     const extraDia = completo ? extraDelDia(f!, h) : 0
+                    const bolsaDia = f?.bolsa_minutos ?? 0
                     const futuro = fecha > hoy
                     const abierto = diaSel === fecha
 
                     let detalle: string
                     if (completo || enCurso) detalle = `${hhmm(f!.hora_entrada)} – ${hhmm(f!.hora_salida)}`
+                    else if (bolsaDia > 0) detalle = 'Día con bolsa de horas'
                     else if (!h) detalle = 'Libre'
                     else if (futuro || fecha === hoy) detalle = `Horario ${hhmm(h.hora_entrada)} – ${hhmm(h.hora_salida)}`
                     else detalle = 'Sin fichar'
@@ -206,9 +209,12 @@ export default function PaginaSemana({ session, horariosPorDia, onDiaGuardado }:
                                 </div>
 
                                 <div className="flex-1 min-w-0">
-                                    <p className={`text-sm tabular-nums ${completo || enCurso ? '' : detalle === 'Sin fichar' ? 'text-negativo' : 'text-tinta-tenue'}`}>
+                                    <p className={`text-sm tabular-nums ${completo || enCurso ? '' : bolsaDia > 0 ? 'text-acento' : detalle === 'Sin fichar' ? 'text-negativo' : 'text-tinta-tenue'}`}>
                                         {detalle}
                                     </p>
+                                    {bolsaDia > 0 && (
+                                        <p className="text-xs text-acento mt-0.5">Bolsa usada: {formatDuracion(bolsaDia)}</p>
+                                    )}
                                     {f?.nota && <p className="text-xs text-tinta-suave truncate mt-0.5">{f.nota}</p>}
                                 </div>
 

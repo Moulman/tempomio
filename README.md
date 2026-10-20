@@ -44,6 +44,7 @@ Overtime is calculated on the fly in the client rather than stored, comparing ea
 - `fichajes` — actual clock-in/out records, one per day
 - `solicitudes_acceso` — waitlist left via "Solicitar acceso" on the login screen; anyone can insert, only admins can read and approve/reject it
 - `sugerencias` — ideas sent from the Ideas page; each user inserts their own, only admins can read them
+- `ajustes_bolsa` — overtime bank: each user's starting balance (with the date from which clock-ins count) and manual corrections. Hours taken from the bank on a given day live in `fichajes.bolsa_minutos`
 
 Admins (`perfiles.es_admin = true`, set from the Supabase dashboard) can read every user's data for the admin panel through the `es_admin()` function in the RLS policies. Database changes live as SQL files in `supabase/migrations/`.
 

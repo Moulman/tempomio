@@ -9,12 +9,14 @@ import type { FichajeHoy } from '../lib/fichajeHoy'
 interface Props {
     fichajeHoy: FichajeHoy
     horariosPorDia: (HorarioDia | null)[]
+    // Saldo de la bolsa de horas (null si no está disponible: no se ofrece usarla)
+    saldoBolsa: number | null
 }
 
 const hhmm = (hora: string | null | undefined) => hora?.slice(0, 5) || '—'
 
 // Cronómetro del día: entrada y salida con un toque, tiempo en vivo y extra frente al horario base
-export default function Fichaje({ fichajeHoy, horariosPorDia }: Props) {
+export default function Fichaje({ fichajeHoy, horariosPorDia, saldoBolsa }: Props) {
     const { fichaje, cargando, enCurso, marcarEntrada, marcarSalida, guardarHoras, guardarNota } = fichajeHoy
     const ahora = useAhora(enCurso)
     const [ocupado, setOcupado] = useState(false)
@@ -24,6 +26,8 @@ export default function Fichaje({ fichajeHoy, horariosPorDia }: Props) {
     const [salidaManual, setSalidaManual] = useState('')
     const [editandoNota, setEditandoNota] = useState(false)
     const [notaManual, setNotaManual] = useState('')
+    // Minutos que faltan para tu hora al pulsar "Marcar salida": se ofrece cubrirlos con la bolsa
+    const [faltaAlSalir, setFaltaAlSalir] = useState<number | null>(null)
 
     // Ejecuta una escritura evitando dobles toques; devuelve si fue bien
     async function guardar(accion: () => Promise<boolean>): Promise<boolean> {
@@ -54,6 +58,27 @@ export default function Fichaje({ fichajeHoy, horariosPorDia }: Props) {
 
     async function guardarEdicionNota() {
         if (await guardar(() => guardarNota(notaManual || null))) setEditandoNota(false)
+    }
+
+    // Si sales antes de completar tu horario, primero se pregunta si usar la bolsa
+    function pulsarSalida() {
+        const h = horariosPorDia[new Date().getDay()]
+        const previsto = h?.activo ? minutosTrabajados(h.hora_entrada, h.hora_salida) : 0
+        if (saldoBolsa !== null && previsto > 0 && fichaje?.hora_entrada) {
+            const trabajado = Math.floor(segundosDesde(fichaje.hora_entrada, new Date()) / 60)
+            const falta = previsto - trabajado - (fichaje.bolsa_minutos ?? 0)
+            if (falta > 0) {
+                setFaltaAlSalir(falta)
+                return
+            }
+        }
+        guardar(() => marcarSalida())
+    }
+
+    async function salirConBolsa(usar: boolean) {
+        const falta = faltaAlSalir ?? 0
+        const ok = await guardar(() => marcarSalida(usar ? (fichaje?.bolsa_minutos ?? 0) + falta : undefined))
+        if (ok) setFaltaAlSalir(null)
     }
 
     if (cargando) {
@@ -136,9 +161,9 @@ export default function Fichaje({ fichajeHoy, horariosPorDia }: Props) {
                     Marcar entrada
                 </button>
             )}
-            {!editando && enCurso && (
+            {!editando && enCurso && faltaAlSalir === null && (
                 <button
-                    onClick={() => guardar(marcarSalida)}
+                    onClick={pulsarSalida}
                     disabled={ocupado}
                     className="mt-6 w-full py-4 rounded-xl bg-tinta text-superficie text-lg font-semibold active:scale-[0.99] transition disabled:opacity-60"
                 >
@@ -146,8 +171,44 @@ export default function Fichaje({ fichajeHoy, horariosPorDia }: Props) {
                 </button>
             )}
 
+            {/* ---------- ¿Cubrir la salida anticipada con la bolsa? ---------- */}
+            {faltaAlSalir !== null && saldoBolsa !== null && (
+                <div className="mt-6 rounded-xl border border-acento/40 bg-acento/5 p-4">
+                    <p className="font-medium">Sales {formatDuracion(faltaAlSalir)} antes de tu hora</p>
+                    <p className="mt-1 text-sm text-tinta-suave">
+                        ¿Lo cubres con tu bolsa de horas? Tienes {formatMinutos(saldoBolsa)}
+                        {saldoBolsa < faltaAlSalir && ` y te quedarías en ${formatMinutos(saldoBolsa - faltaAlSalir)}`}.
+                    </p>
+                    <div className="mt-4 flex flex-col gap-2">
+                        <button
+                            onClick={() => salirConBolsa(true)}
+                            disabled={ocupado}
+                            className="w-full py-3 rounded-xl bg-acento text-sobre-acento font-semibold disabled:opacity-60"
+                        >
+                            Sí, usar {formatDuracion(faltaAlSalir)} de la bolsa
+                        </button>
+                        <button
+                            onClick={() => salirConBolsa(false)}
+                            disabled={ocupado}
+                            className="w-full py-3 rounded-xl border border-linea font-medium disabled:opacity-60"
+                        >
+                            No, salir sin usar la bolsa
+                        </button>
+                        <button onClick={() => setFaltaAlSalir(null)} className="py-2 text-sm text-tinta-suave">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {error && (
                 <p className="mt-3 text-sm text-negativo bg-negativo/10 rounded-lg px-3 py-2">{error}</p>
+            )}
+
+            {!!fichaje?.bolsa_minutos && faltaAlSalir === null && (
+                <p className="mt-4 text-sm text-center text-tinta-suave">
+                    Bolsa de horas usada hoy: <span className="font-medium text-tinta">{formatDuracion(fichaje.bolsa_minutos)}</span>
+                </p>
             )}
 
             {/* ---------- Nota ---------- */}

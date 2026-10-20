@@ -57,10 +57,13 @@ export function useFichajeHoy(userId: string | null) {
             .single())
     }
 
-    async function marcarSalida() {
+    // bolsaMinutos: horas de la bolsa que cubren una salida antes de tu hora
+    async function marcarSalida(bolsaMinutos?: number) {
+        const cambios: Record<string, unknown> = { hora_salida: horaActual() }
+        if (bolsaMinutos) cambios.bolsa_minutos = bolsaMinutos
         return aplicar(await supabase
             .from('fichajes')
-            .update({ hora_salida: horaActual() })
+            .update(cambios)
             .eq('user_id', userId)
             .eq('fecha', fechaHoy())
             .select()

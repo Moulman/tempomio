@@ -40,10 +40,16 @@ create table if not exists fichajes (
   hora_entrada time,
   hora_salida time,
   nota text,
+  -- Horas de la bolsa usadas ese día (salir antes o día libre)
+  bolsa_minutos int check (bolsa_minutos is null or bolsa_minutos > 0),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, fecha)
 );
+-- En una base ya creada sin la columna (ver migración 20261021100000_bolsa_horas.sql)
+alter table fichajes
+  add column if not exists bolsa_minutos int
+  check (bolsa_minutos is null or bolsa_minutos > 0);
 
 -- ---------- Tabla: lista de espera ("Solicitar acceso" en el login) ----------
 -- El login solo envía el email; nombre y mensaje son opcionales.
@@ -65,6 +71,23 @@ create table if not exists sugerencias (
   texto text not null check (char_length(texto) between 1 and 2000),
   created_at timestamptz not null default now()
 );
+
+-- ---------- Tabla: bolsa de horas (saldo inicial y ajustes) ----------
+-- es_inicial: saldo de partida; `fecha` es desde cuándo cuentan los
+-- fichajes. Uno por usuario y puede valer 0 ("empiezo de cero").
+create table if not exists ajustes_bolsa (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  fecha date not null default current_date,
+  minutos int not null,
+  motivo text check (motivo is null or char_length(motivo) <= 200),
+  es_inicial boolean not null default false,
+  created_at timestamptz not null default now(),
+  check (es_inicial or minutos <> 0)
+);
+
+create unique index if not exists ajustes_bolsa_un_inicial
+  on ajustes_bolsa (user_id) where es_inicial;
 
 -- ============================================================
 -- Funciones y triggers
@@ -130,6 +153,7 @@ alter table horarios_base enable row level security;
 alter table fichajes enable row level security;
 alter table solicitudes_acceso enable row level security;
 alter table sugerencias enable row level security;
+alter table ajustes_bolsa enable row level security;
 
 -- ---------- perfiles ----------
 drop policy if exists "perfiles_select_own" on perfiles;
@@ -197,3 +221,18 @@ create policy "sugerencias_insert_own" on sugerencias
 drop policy if exists "sugerencias_select_admin" on sugerencias;
 create policy "sugerencias_select_admin" on sugerencias
   for select using (es_admin());
+
+-- ---------- ajustes_bolsa ----------
+-- Cada usuario gestiona sus ajustes; el admin puede leerlos.
+drop policy if exists "ajustes_bolsa_select_own" on ajustes_bolsa;
+create policy "ajustes_bolsa_select_own" on ajustes_bolsa
+  for select using (auth.uid() = user_id or es_admin());
+drop policy if exists "ajustes_bolsa_insert_own" on ajustes_bolsa;
+create policy "ajustes_bolsa_insert_own" on ajustes_bolsa
+  for insert with check (auth.uid() = user_id);
+drop policy if exists "ajustes_bolsa_update_own" on ajustes_bolsa;
+create policy "ajustes_bolsa_update_own" on ajustes_bolsa
+  for update using (auth.uid() = user_id);
+drop policy if exists "ajustes_bolsa_delete_own" on ajustes_bolsa;
+create policy "ajustes_bolsa_delete_own" on ajustes_bolsa
+  for delete using (auth.uid() = user_id);

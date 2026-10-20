@@ -141,7 +141,7 @@ export default function PaginaHistorial({ session, horariosPorDia, onDiaGuardado
                   ${seleccionado ? 'ring-2 ring-acento' : ''}
                   ${tieneFichaje
                                         ? extra >= 0 ? 'bg-positivo/15 text-positivo' : 'bg-negativo/15 text-negativo'
-                                        : 'bg-fondo text-tinta-suave'}`}
+                                        : fichaje?.bolsa_minutos ? 'bg-acento/15 text-acento' : 'bg-fondo text-tinta-suave'}`}
                             >
                                 <span>{dia}</span>
                                 {fichaje?.nota && (

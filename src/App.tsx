@@ -13,6 +13,10 @@ import PaginaAdmin from './pages/PaginaAdmin'
 import Estructura from './components/Estructura'
 import { useTema } from './lib/tema'
 import { useFichajeHoy } from './lib/fichajeHoy'
+import { calcularBolsa, useBolsa } from './lib/bolsa'
+import { fechaLocal } from './lib/schedule'
+import PaginaBolsa from './pages/PaginaBolsa'
+import Bienvenida from './components/Bienvenida'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -23,6 +27,8 @@ function App() {
   const [horariosPorDia, setHorariosPorDia] = useState<(HorarioDia | null)[]>(Array(7).fill(null))
   const { tema, alternarTema } = useTema()
   const fichajeHoy = useFichajeHoy(session?.user.id ?? null)
+  // La bolsa se recarga cada vez que se guarda el fichaje de hoy
+  const bolsa = useBolsa(session?.user.id ?? null, fichajeHoy.version)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -66,8 +72,30 @@ function App() {
   if (cargando) return null
   if (!session) return <Login />
 
+  const resumenBolsa = calcularBolsa(bolsa.fichajes, bolsa.ajustes, horariosPorDia, fechaLocal(new Date()))
+
+  // Cuenta nueva (sin fichajes ni saldo inicial): primero la bienvenida
+  if (perfilCargado && bolsa.cargado && !bolsa.error && !resumenBolsa.inicial && bolsa.fichajes.length === 0) {
+    return (
+      <Bienvenida
+        session={session}
+        nombre={nombre}
+        horariosPorDia={horariosPorDia}
+        bolsa={bolsa}
+        onPerfilActualizado={() => cargarPerfil(session.user.id)}
+        onHorariosActualizados={() => cargarHorarios(session.user.id)}
+      />
+    )
+  }
+
+  // Un día editado desde Semana o Historial puede ser hoy y cambia la bolsa
+  function diaGuardado() {
+    fichajeHoy.recargar()
+    bolsa.recargar()
+  }
+
   return (
-    <Estructura esAdmin={esAdmin} tema={tema} onAlternarTema={alternarTema} fichajeHoy={fichajeHoy}>
+    <Estructura esAdmin={esAdmin} tema={tema} onAlternarTema={alternarTema} fichajeHoy={fichajeHoy} horariosPorDia={horariosPorDia}>
       <Routes>
         <Route
           path="/"
@@ -77,6 +105,8 @@ function App() {
               nombre={nombre}
               horariosPorDia={horariosPorDia}
               fichajeHoy={fichajeHoy}
+              bolsa={bolsa}
+              resumenBolsa={resumenBolsa}
             />
           }
         />
@@ -100,7 +130,7 @@ function App() {
             <PaginaHistorial
               session={session}
               horariosPorDia={horariosPorDia}
-              onDiaGuardado={fichajeHoy.recargar}
+              onDiaGuardado={diaGuardado}
             />
           }
         />
@@ -110,9 +140,13 @@ function App() {
             <PaginaSemana
               session={session}
               horariosPorDia={horariosPorDia}
-              onDiaGuardado={fichajeHoy.recargar}
+              onDiaGuardado={diaGuardado}
             />
           }
+        />
+        <Route
+          path="/bolsa"
+          element={<PaginaBolsa bolsa={bolsa} resumen={resumenBolsa} horariosPorDia={horariosPorDia} />}
         />
         <Route path="/ideas" element={<PaginaIdeas session={session} />} />
         <Route
