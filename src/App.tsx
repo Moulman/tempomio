@@ -9,6 +9,8 @@ import PaginaPerfil from './pages/PaginaPerfil'
 import PaginaHistorial from './pages/PaginaHistorial'
 import PaginaIdeas from './pages/PaginaIdeas'
 import PaginaAdmin from './pages/PaginaAdmin'
+import Estructura from './components/Estructura'
+import { useTema } from './lib/tema'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -17,6 +19,7 @@ function App() {
   const [esAdmin, setEsAdmin] = useState(false)
   const [perfilCargado, setPerfilCargado] = useState(false)
   const [horariosPorDia, setHorariosPorDia] = useState<(HorarioDia | null)[]>(Array(7).fill(null))
+  const { tema, alternarTema } = useTema()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -61,7 +64,7 @@ function App() {
   if (!session) return <Login />
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100">
+    <Estructura esAdmin={esAdmin} tema={tema} onAlternarTema={alternarTema}>
       <Routes>
         <Route
           path="/"
@@ -69,7 +72,6 @@ function App() {
             <PaginaPrincipal
               session={session}
               nombre={nombre}
-              esAdmin={esAdmin}
               horariosPorDia={horariosPorDia}
               onHorariosActualizados={() => cargarHorarios(session.user.id)}
             />
@@ -81,6 +83,8 @@ function App() {
             <PaginaPerfil
               session={session}
               nombre={nombre}
+              tema={tema}
+              onAlternarTema={alternarTema}
               onPerfilActualizado={() => cargarPerfil(session.user.id)}
             />
           }
@@ -101,7 +105,7 @@ function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </div>
+    </Estructura>
   )
 }
 

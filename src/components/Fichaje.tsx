@@ -122,18 +122,18 @@ export default function Fichaje({ userId, horariosPorDia, onCambio }: Props) {
     const extra = fichaje ? extraDelDia(fichaje, horarioHoy) : 0
 
     return (
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
+        <div className="bg-superficie border border-linea rounded-xl p-5">
             <h2 className="text-base font-medium capitalize mb-4">
                 {hoy.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
             </h2>
 
             <div className="flex justify-around my-4">
                 <div className="text-center">
-                    <div className="text-xs text-slate-400">Entrada</div>
+                    <div className="text-xs text-tinta-suave">Entrada</div>
                     <div className="text-3xl font-semibold">{fichaje?.hora_entrada?.slice(0, 5) || '—'}</div>
                 </div>
                 <div className="text-center">
-                    <div className="text-xs text-slate-400">Salida</div>
+                    <div className="text-xs text-tinta-suave">Salida</div>
                     <div className="text-3xl font-semibold">{fichaje?.hora_salida?.slice(0, 5) || '—'}</div>
                 </div>
             </div>
@@ -141,7 +141,7 @@ export default function Fichaje({ userId, horariosPorDia, onCambio }: Props) {
             {!editando && !fichaje?.hora_entrada && (
                 <button
                     onClick={marcarEntrada}
-                    className="w-full py-3.5 rounded-xl bg-sky-400 text-slate-900 font-semibold"
+                    className="w-full py-3.5 rounded-xl bg-acento text-sobre-acento font-semibold"
                 >
                     Marcar entrada
                 </button>
@@ -149,13 +149,13 @@ export default function Fichaje({ userId, horariosPorDia, onCambio }: Props) {
             {!editando && fichaje?.hora_entrada && !fichaje?.hora_salida && (
                 <button
                     onClick={marcarSalida}
-                    className="w-full py-3.5 rounded-xl bg-sky-400 text-slate-900 font-semibold"
+                    className="w-full py-3.5 rounded-xl bg-acento text-sobre-acento font-semibold"
                 >
                     Marcar salida
                 </button>
             )}
             {!editando && fichaje?.hora_entrada && fichaje?.hora_salida && (
-                <div className={`text-center py-2.5 rounded-xl font-semibold ${extra >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                <div className={`text-center py-2.5 rounded-xl font-semibold ${extra >= 0 ? 'bg-positivo/10 text-positivo' : 'bg-negativo/10 text-negativo'}`}>
                     Extra de hoy: {formatMinutos(extra)}
                 </div>
             )}
@@ -163,11 +163,11 @@ export default function Fichaje({ userId, horariosPorDia, onCambio }: Props) {
             {!editando && fichaje?.hora_entrada && !editandoNota && (
                 <div className="mt-4">
                     {fichaje?.nota && (
-                        <p className="text-sm text-slate-300 bg-slate-900 rounded-lg px-3 py-2 mb-2">{fichaje.nota}</p>
+                        <p className="text-sm text-tinta bg-fondo rounded-lg px-3 py-2 mb-2">{fichaje.nota}</p>
                     )}
                     <button
                         onClick={abrirNota}
-                        className="w-full text-sm text-slate-400 hover:text-slate-200"
+                        className="w-full text-sm text-tinta-suave hover:text-tinta"
                     >
                         {fichaje?.nota ? 'Editar nota' : 'Añadir nota'}
                     </button>
@@ -181,13 +181,13 @@ export default function Fichaje({ userId, horariosPorDia, onCambio }: Props) {
                         onChange={(e) => setNotaManual(e.target.value)}
                         placeholder="¿Por qué te quedaste hasta tarde?"
                         rows={2}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100"
+                        className="w-full bg-fondo border border-linea rounded-lg px-3 py-2 text-sm text-tinta"
                     />
                     <div className="flex gap-2.5">
-                        <button onClick={guardarNota} className="flex-1 py-2.5 rounded-xl bg-sky-400 text-slate-900 font-semibold">
+                        <button onClick={guardarNota} className="flex-1 py-2.5 rounded-xl bg-acento text-sobre-acento font-semibold">
                             Guardar
                         </button>
-                        <button onClick={() => setEditandoNota(false)} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-200">
+                        <button onClick={() => setEditandoNota(false)} className="flex-1 py-2.5 rounded-xl border border-linea text-tinta">
                             Cancelar
                         </button>
                     </div>
@@ -197,37 +197,37 @@ export default function Fichaje({ userId, horariosPorDia, onCambio }: Props) {
             {!editando ? (
                 <button
                     onClick={abrirEdicion}
-                    className="w-full mt-3 text-sm text-slate-400 hover:text-slate-200"
+                    className="w-full mt-3 text-sm text-tinta-suave hover:text-tinta"
                 >
                     Corregir horas
                 </button>
             ) : (
                 <div className="mt-4 space-y-3">
                     <div className="flex gap-3">
-                        <label className="flex-1 text-xs text-slate-400">
+                        <label className="flex-1 text-xs text-tinta-suave">
                             Entrada
                             <input
                                 type="time"
                                 value={entradaManual}
                                 onChange={(e) => setEntradaManual(e.target.value)}
-                                className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-base text-slate-100"
+                                className="w-full mt-1 bg-fondo border border-linea rounded-lg px-2 py-2 text-base text-tinta"
                             />
                         </label>
-                        <label className="flex-1 text-xs text-slate-400">
+                        <label className="flex-1 text-xs text-tinta-suave">
                             Salida
                             <input
                                 type="time"
                                 value={salidaManual}
                                 onChange={(e) => setSalidaManual(e.target.value)}
-                                className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-base text-slate-100"
+                                className="w-full mt-1 bg-fondo border border-linea rounded-lg px-2 py-2 text-base text-tinta"
                             />
                         </label>
                     </div>
                     <div className="flex gap-2.5">
-                        <button onClick={guardarEdicion} className="flex-1 py-2.5 rounded-xl bg-sky-400 text-slate-900 font-semibold">
+                        <button onClick={guardarEdicion} className="flex-1 py-2.5 rounded-xl bg-acento text-sobre-acento font-semibold">
                             Guardar
                         </button>
-                        <button onClick={() => setEditando(false)} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-200">
+                        <button onClick={() => setEditando(false)} className="flex-1 py-2.5 rounded-xl border border-linea text-tinta">
                             Cancelar
                         </button>
                     </div>

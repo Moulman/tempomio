@@ -96,16 +96,16 @@ export default function PaginaHistorial({ session, horariosPorDia }: Props) {
                 <h1 className="text-2xl font-semibold">Historial</h1>
             </div>
 
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
+            <div className="bg-superficie border border-linea rounded-xl p-5">
                 <div className="flex justify-between items-center mb-4">
-                    <button onClick={mesAnterior} className="px-3 py-1 rounded-lg text-slate-400 hover:text-slate-100">‹</button>
+                    <button onClick={mesAnterior} className="px-3 py-1 rounded-lg text-tinta-suave hover:text-tinta">‹</button>
                     <span className="font-medium capitalize">{MESES[mes]} {anio}</span>
-                    <button onClick={mesSiguiente} className="px-3 py-1 rounded-lg text-slate-400 hover:text-slate-100">›</button>
+                    <button onClick={mesSiguiente} className="px-3 py-1 rounded-lg text-tinta-suave hover:text-tinta">›</button>
                 </div>
 
                 <div className="grid grid-cols-7 gap-1 mb-1">
                     {DIAS_SEMANA.map((d) => (
-                        <div key={d} className="text-center text-xs text-slate-500 py-1">{d}</div>
+                        <div key={d} className="text-center text-xs text-tinta-tenue py-1">{d}</div>
                     ))}
                 </div>
 
@@ -124,14 +124,14 @@ export default function PaginaHistorial({ session, horariosPorDia }: Props) {
                                 key={fecha}
                                 onClick={() => seleccionarDia(fecha)}
                                 className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm
-                  ${seleccionado ? 'ring-2 ring-sky-400' : ''}
+                  ${seleccionado ? 'ring-2 ring-acento' : ''}
                   ${tieneFichaje
-                                        ? extra >= 0 ? 'bg-green-500/15 text-green-300' : 'bg-red-500/15 text-red-300'
-                                        : 'bg-slate-900 text-slate-400'}`}
+                                        ? extra >= 0 ? 'bg-positivo/15 text-positivo' : 'bg-negativo/15 text-negativo'
+                                        : 'bg-fondo text-tinta-suave'}`}
                             >
                                 <span>{dia}</span>
                                 {fichaje?.nota && (
-                                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-sky-400" />
+                                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-acento" />
                                 )}
                             </button>
                         )
@@ -141,45 +141,45 @@ export default function PaginaHistorial({ session, horariosPorDia }: Props) {
 
             {/* Panel de edición del día seleccionado */}
             {diaSel && (
-                <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
+                <div className="bg-superficie border border-linea rounded-xl p-5">
                     <h3 className="text-base font-medium mb-3">
                         {new Date(diaSel + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
                     </h3>
                     <div className="flex gap-3 mb-4">
-                        <label className="flex-1 text-xs text-slate-400">
+                        <label className="flex-1 text-xs text-tinta-suave">
                             Entrada
                             <input
                                 type="time"
                                 value={entradaManual}
                                 onChange={(e) => setEntradaManual(e.target.value)}
-                                className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-base text-slate-100"
+                                className="w-full mt-1 bg-fondo border border-linea rounded-lg px-2 py-2 text-base text-tinta"
                             />
                         </label>
-                        <label className="flex-1 text-xs text-slate-400">
+                        <label className="flex-1 text-xs text-tinta-suave">
                             Salida
                             <input
                                 type="time"
                                 value={salidaManual}
                                 onChange={(e) => setSalidaManual(e.target.value)}
-                                className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-base text-slate-100"
+                                className="w-full mt-1 bg-fondo border border-linea rounded-lg px-2 py-2 text-base text-tinta"
                             />
                         </label>
                     </div>
-                    <label className="block text-xs text-slate-400 mb-4">
+                    <label className="block text-xs text-tinta-suave mb-4">
                         Nota
                         <textarea
                             value={notaManual}
                             onChange={(e) => setNotaManual(e.target.value)}
                             placeholder="Motivo (opcional)"
                             rows={2}
-                            className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-sm text-slate-100"
+                            className="w-full mt-1 bg-fondo border border-linea rounded-lg px-2 py-2 text-sm text-tinta"
                         />
                     </label>
                     <div className="flex gap-2.5">
-                        <button onClick={guardarDia} disabled={guardando} className="flex-1 py-2.5 rounded-xl bg-sky-400 text-slate-900 font-semibold">
+                        <button onClick={guardarDia} disabled={guardando} className="flex-1 py-2.5 rounded-xl bg-acento text-sobre-acento font-semibold">
                             {guardando ? 'Guardando...' : 'Guardar'}
                         </button>
-                        <button onClick={() => setDiaSel(null)} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-200">
+                        <button onClick={() => setDiaSel(null)} className="flex-1 py-2.5 rounded-xl border border-linea text-tinta">
                             Cancelar
                         </button>
                     </div>

@@ -38,9 +38,9 @@ const fechaCorta = (fecha: string) =>
 const esPendiente = (s: Solicitud) => !s.estado || s.estado === 'pendiente'
 
 const COLOR_PRIORIDAD: Record<string, string> = {
-    lo_necesito: 'bg-orange-500/15 text-orange-300',
-    estaria_guay: 'bg-sky-500/15 text-sky-300',
-    bug: 'bg-red-500/15 text-red-300',
+    lo_necesito: 'bg-aviso/15 text-aviso',
+    estaria_guay: 'bg-acento/15 text-acento',
+    bug: 'bg-negativo/15 text-negativo',
 }
 
 // Dashboard de administración. El acceso real a los datos lo controla RLS
@@ -138,11 +138,11 @@ export default function PaginaAdmin() {
             </div>
 
             {error && (
-                <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2 mb-4">{error}</p>
+                <p className="text-sm text-negativo bg-negativo/10 rounded-lg px-3 py-2 mb-4">{error}</p>
             )}
 
             {!cargado ? (
-                <p className="text-sm text-slate-400">Cargando...</p>
+                <p className="text-sm text-tinta-suave">Cargando...</p>
             ) : (
                 <>
                     {/* ---------- Stats ---------- */}
@@ -152,47 +152,47 @@ export default function PaginaAdmin() {
                             { titulo: 'Fichajes esta semana', valor: fichajesSemana ?? '—' },
                             { titulo: 'Solicitudes pendientes', valor: pendientes.length },
                         ].map((s) => (
-                            <div key={s.titulo} className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+                            <div key={s.titulo} className="bg-superficie border border-linea rounded-xl p-4">
                                 <p className="text-2xl font-semibold">{s.valor}</p>
-                                <p className="text-xs text-slate-400 mt-1">{s.titulo}</p>
+                                <p className="text-xs text-tinta-suave mt-1">{s.titulo}</p>
                             </div>
                         ))}
                     </div>
 
                     {/* ---------- Solicitudes ---------- */}
-                    <section className="bg-slate-800 border border-slate-700 rounded-xl p-5 mb-4">
+                    <section className="bg-superficie border border-linea rounded-xl p-5 mb-4">
                         <h2 className="text-base font-medium mb-3">Solicitudes pendientes</h2>
                         {pendientes.length === 0 ? (
-                            <p className="text-sm text-slate-500">No hay solicitudes pendientes.</p>
+                            <p className="text-sm text-tinta-tenue">No hay solicitudes pendientes.</p>
                         ) : (
                             <ul className="space-y-2">
                                 {pendientes.map((s) => (
-                                    <li key={s.id} className="bg-slate-900 rounded-xl p-3">
+                                    <li key={s.id} className="bg-fondo rounded-xl p-3">
                                         <div className="flex justify-between items-start gap-3">
                                             <div className="min-w-0">
                                                 <p className="font-medium truncate">{s.nombre || 'Sin nombre'}</p>
-                                                <p className="text-sm text-slate-400 truncate">{s.email}</p>
-                                                <p className="text-xs text-slate-500 mt-0.5">{fechaCorta(s.created_at)}</p>
+                                                <p className="text-sm text-tinta-suave truncate">{s.email}</p>
+                                                <p className="text-xs text-tinta-tenue mt-0.5">{fechaCorta(s.created_at)}</p>
                                             </div>
                                             <div className="flex gap-2 shrink-0">
                                                 <button
                                                     onClick={() => cambiarEstado(s, 'aprobada')}
                                                     disabled={procesando === s.id}
-                                                    className="px-3 py-1.5 rounded-lg bg-green-500 text-slate-900 text-sm font-semibold disabled:opacity-60"
+                                                    className="px-3 py-1.5 rounded-lg bg-positivo text-sobre-acento text-sm font-semibold disabled:opacity-60"
                                                 >
                                                     Aprobar
                                                 </button>
                                                 <button
                                                     onClick={() => cambiarEstado(s, 'rechazada')}
                                                     disabled={procesando === s.id}
-                                                    className="px-3 py-1.5 rounded-lg border border-slate-700 text-red-400 text-sm disabled:opacity-60"
+                                                    className="px-3 py-1.5 rounded-lg border border-linea text-negativo text-sm disabled:opacity-60"
                                                 >
                                                     Rechazar
                                                 </button>
                                             </div>
                                         </div>
                                         {s.mensaje && (
-                                            <p className="text-sm text-slate-300 mt-2 whitespace-pre-line">{s.mensaje}</p>
+                                            <p className="text-sm text-tinta mt-2 whitespace-pre-line">{s.mensaje}</p>
                                         )}
                                     </li>
                                 ))}
@@ -203,16 +203,16 @@ export default function PaginaAdmin() {
                             <div className="mt-4">
                                 <button
                                     onClick={() => setVerProcesadas(!verProcesadas)}
-                                    className="text-sm text-sky-400 hover:text-sky-300"
+                                    className="text-sm text-acento hover:opacity-80"
                                 >
                                     {verProcesadas ? 'Ocultar' : 'Ver'} procesadas ({procesadas.length})
                                 </button>
                                 {verProcesadas && (
                                     <ul className="mt-2">
                                         {procesadas.map((s) => (
-                                            <li key={s.id} className="flex justify-between py-2 border-b border-slate-700 last:border-0 text-sm">
+                                            <li key={s.id} className="flex justify-between py-2 border-b border-linea last:border-0 text-sm">
                                                 <span className="truncate">{s.email}</span>
-                                                <span className={s.estado === 'aprobada' ? 'text-green-400' : 'text-red-400'}>
+                                                <span className={s.estado === 'aprobada' ? 'text-positivo' : 'text-negativo'}>
                                                     {s.estado}
                                                 </span>
                                             </li>
@@ -224,7 +224,7 @@ export default function PaginaAdmin() {
                     </section>
 
                     {/* ---------- Sugerencias ---------- */}
-                    <section className="bg-slate-800 border border-slate-700 rounded-xl p-5 mb-4">
+                    <section className="bg-superficie border border-linea rounded-xl p-5 mb-4">
                         <h2 className="text-base font-medium mb-3">Ideas recibidas ({sugerencias.length})</h2>
                         <div className="flex flex-wrap gap-2 mb-3">
                             {[{ valor: null, etiqueta: 'Todas' }, ...PRIORIDADES.map((p) => ({ valor: p.valor, etiqueta: `${p.emoji} ${p.titulo}` }))].map((f) => (
@@ -232,28 +232,28 @@ export default function PaginaAdmin() {
                                     key={f.valor ?? 'todas'}
                                     onClick={() => setFiltroPrioridad(f.valor)}
                                     className={`px-2.5 py-1 rounded-full text-xs border ${filtroPrioridad === f.valor
-                                        ? 'border-sky-400 text-slate-100'
-                                        : 'border-slate-700 text-slate-400'}`}
+                                        ? 'border-acento text-tinta'
+                                        : 'border-linea text-tinta-suave'}`}
                                 >
                                     {f.etiqueta}
                                 </button>
                             ))}
                         </div>
                         {sugerenciasVisibles.length === 0 ? (
-                            <p className="text-sm text-slate-500">Aún no hay ideas aquí.</p>
+                            <p className="text-sm text-tinta-tenue">Aún no hay ideas aquí.</p>
                         ) : (
                             <ul className="space-y-2">
                                 {sugerenciasVisibles.map((s) => (
-                                    <li key={s.id} className="bg-slate-900 rounded-xl p-3">
+                                    <li key={s.id} className="bg-fondo rounded-xl p-3">
                                         <div className="flex justify-between items-center gap-2 mb-1.5">
-                                            <span className={`px-2 py-0.5 rounded-full text-xs ${COLOR_PRIORIDAD[s.prioridad] ?? 'bg-slate-700 text-slate-300'}`}>
+                                            <span className={`px-2 py-0.5 rounded-full text-xs ${COLOR_PRIORIDAD[s.prioridad] ?? 'bg-realce text-tinta'}`}>
                                                 {etiquetaPrioridad(s.prioridad)}
                                             </span>
-                                            <span className="text-xs text-slate-500 truncate">
+                                            <span className="text-xs text-tinta-tenue truncate">
                                                 {nombrePorId[s.user_id] || 'Usuario'} · {fechaCorta(s.created_at)}
                                             </span>
                                         </div>
-                                        <p className="text-sm text-slate-200 whitespace-pre-line">{s.texto}</p>
+                                        <p className="text-sm text-tinta whitespace-pre-line">{s.texto}</p>
                                     </li>
                                 ))}
                             </ul>
@@ -261,21 +261,21 @@ export default function PaginaAdmin() {
                     </section>
 
                     {/* ---------- Usuarios ---------- */}
-                    <section className="bg-slate-800 border border-slate-700 rounded-xl p-5">
+                    <section className="bg-superficie border border-linea rounded-xl p-5">
                         <h2 className="text-base font-medium mb-3">Usuarios</h2>
                         <ul>
                             {usuarios.map((u) => (
-                                <li key={u.id} className="flex justify-between items-center gap-3 py-2.5 border-b border-slate-700 last:border-0 text-sm">
+                                <li key={u.id} className="flex justify-between items-center gap-3 py-2.5 border-b border-linea last:border-0 text-sm">
                                     <div className="min-w-0">
                                         <p className="font-medium truncate">
                                             {u.nombre || 'Sin nombre'}
-                                            {u.es_admin && <span className="ml-2 text-xs text-amber-400">admin</span>}
+                                            {u.es_admin && <span className="ml-2 text-xs text-aviso">admin</span>}
                                         </p>
-                                        <p className="text-xs text-slate-500">alta {fechaCorta(u.created_at)}</p>
+                                        <p className="text-xs text-tinta-tenue">alta {fechaCorta(u.created_at)}</p>
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <p className="text-xs text-slate-500">Último fichaje</p>
-                                        <p className="text-slate-200">
+                                        <p className="text-xs text-tinta-tenue">Último fichaje</p>
+                                        <p className="text-tinta">
                                             {u.ultimoFichaje
                                                 ? `${fechaCorta(u.ultimoFichaje.fecha)} ${u.ultimoFichaje.hora_entrada?.slice(0, 5) ?? ''}`
                                                 : '—'}

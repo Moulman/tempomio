@@ -53,20 +53,20 @@ export default function PaginaIdeas({ session }: Props) {
                 <h1 className="text-2xl font-semibold">Ideas</h1>
             </div>
 
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
+            <div className="bg-superficie border border-linea rounded-xl p-5">
                 {enviada ? (
                     <div className="text-center py-6">
                         <div className="text-5xl mb-3">🚀</div>
                         <p className="text-lg font-semibold">¡Recibido!</p>
-                        <p className="text-sm text-slate-400 mt-1">Si es buena, la verás pronto 🚀</p>
-                        <button onClick={otraIdea} className="mt-5 text-sm text-sky-400 hover:text-sky-300">
+                        <p className="text-sm text-tinta-suave mt-1">Si es buena, la verás pronto 🚀</p>
+                        <button onClick={otraIdea} className="mt-5 text-sm text-acento hover:opacity-80">
                             Tengo otra idea
                         </button>
                     </div>
                 ) : (
                     <form onSubmit={enviar}>
                         <h2 className="text-lg font-semibold">¿Qué le falta a TempoMio? 🤔</h2>
-                        <p className="text-sm text-slate-400 mt-1 mb-4">
+                        <p className="text-sm text-tinta-suave mt-1 mb-4">
                             Ideas, caprichos o cosas que no funcionan: todo vale.
                         </p>
 
@@ -81,11 +81,11 @@ export default function PaginaIdeas({ session }: Props) {
                                         aria-checked={activa}
                                         onClick={() => setPrioridad(p.valor)}
                                         className={`rounded-xl border px-2 py-3 text-center transition-all ${activa
-                                            ? 'border-sky-400 bg-sky-400/10 scale-105'
-                                            : 'border-slate-700 hover:border-slate-500'}`}
+                                            ? 'border-acento bg-acento/10 scale-105'
+                                            : 'border-linea hover:border-tinta-tenue'}`}
                                     >
                                         <span className="block text-2xl">{p.emoji}</span>
-                                        <span className={`block text-xs mt-1 ${activa ? 'text-slate-100' : 'text-slate-400'}`}>
+                                        <span className={`block text-xs mt-1 ${activa ? 'text-tinta' : 'text-tinta-suave'}`}>
                                             {p.titulo}
                                         </span>
                                     </button>
@@ -100,20 +100,20 @@ export default function PaginaIdeas({ session }: Props) {
                             rows={5}
                             maxLength={MAX_LONGITUD_IDEA}
                             required
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                            className="w-full bg-fondo border border-linea rounded-lg px-3 py-2.5 text-tinta placeholder:text-tinta-tenue focus:outline-none focus:ring-2 focus:ring-acento"
                         />
-                        <p className="text-xs text-slate-500 text-right mt-1">
+                        <p className="text-xs text-tinta-tenue text-right mt-1">
                             {texto.length}/{MAX_LONGITUD_IDEA}
                         </p>
 
                         {error && (
-                            <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2 mt-2">{error}</p>
+                            <p className="text-sm text-negativo bg-negativo/10 rounded-lg px-3 py-2 mt-2">{error}</p>
                         )}
 
                         <button
                             type="submit"
                             disabled={enviando || !texto.trim()}
-                            className="w-full mt-3 py-3 rounded-xl bg-sky-400 text-slate-900 font-semibold disabled:opacity-60"
+                            className="w-full mt-3 py-3 rounded-xl bg-acento text-sobre-acento font-semibold disabled:opacity-60"
                         >
                             {enviando ? 'Enviando...' : 'Enviar idea'}
                         </button>

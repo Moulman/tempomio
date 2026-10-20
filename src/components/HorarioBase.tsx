@@ -86,12 +86,12 @@ export default function HorarioBase({ userId, horariosPorDia, onActualizado }: P
     // ---------- Modo vista ----------
     if (!editando) {
         return (
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
+            <div className="bg-superficie border border-linea rounded-xl p-5">
                 <div className="flex justify-between items-center mb-3">
                     <h3 className="text-base font-medium">Horario base</h3>
                     <button
                         onClick={abrirEdicion}
-                        className="text-sm text-sky-400 hover:text-sky-300"
+                        className="text-sm text-acento hover:opacity-80"
                     >
                         Editar
                     </button>
@@ -100,9 +100,9 @@ export default function HorarioBase({ userId, horariosPorDia, onActualizado }: P
                     {DIAS.map((nombre, i) => {
                         const h = horariosPorDia[i]
                         return (
-                            <li key={i} className="flex justify-between py-2 border-b border-slate-700 last:border-0 text-sm">
+                            <li key={i} className="flex justify-between py-2 border-b border-linea last:border-0 text-sm">
                                 <span>{nombre}</span>
-                                <span className={h ? 'text-slate-200' : 'text-slate-500'}>
+                                <span className={h ? 'text-tinta' : 'text-tinta-tenue'}>
                                     {h ? `${h.hora_entrada.slice(0, 5)} – ${h.hora_salida.slice(0, 5)}` : 'Libre'}
                                 </span>
                             </li>
@@ -115,7 +115,7 @@ export default function HorarioBase({ userId, horariosPorDia, onActualizado }: P
 
     // ---------- Modo edición ----------
     return (
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
+        <div className="bg-superficie border border-linea rounded-xl p-5">
             <h3 className="text-base font-medium mb-3">Editar horario base</h3>
             {DIAS.map((nombre, i) => (
                 <div key={i} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 py-1.5">
@@ -124,25 +124,25 @@ export default function HorarioBase({ userId, horariosPorDia, onActualizado }: P
                         type="time"
                         value={borrador[i].hora_entrada}
                         onChange={(e) => cambiarHora(i, 'hora_entrada', e.target.value)}
-                        className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-sm"
+                        className="bg-fondo border border-linea rounded-lg px-2 py-1 text-sm"
                     />
                     <input
                         type="time"
                         value={borrador[i].hora_salida}
                         onChange={(e) => cambiarHora(i, 'hora_salida', e.target.value)}
-                        className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-sm"
+                        className="bg-fondo border border-linea rounded-lg px-2 py-1 text-sm"
                     />
                 </div>
             ))}
-            <p className="text-xs text-slate-500 mt-2">Deja un día vacío para marcarlo como libre.</p>
+            <p className="text-xs text-tinta-tenue mt-2">Deja un día vacío para marcarlo como libre.</p>
             {error && (
-                <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2 mt-3">{error}</p>
+                <p className="text-sm text-negativo bg-negativo/10 rounded-lg px-3 py-2 mt-3">{error}</p>
             )}
             <div className="flex gap-2.5 mt-4">
-                <button onClick={guardar} disabled={guardando} className="flex-1 py-2.5 rounded-xl bg-sky-400 text-slate-900 font-semibold disabled:opacity-60">
+                <button onClick={guardar} disabled={guardando} className="flex-1 py-2.5 rounded-xl bg-acento text-sobre-acento font-semibold disabled:opacity-60">
                     {guardando ? 'Guardando...' : 'Guardar'}
                 </button>
-                <button onClick={() => setEditando(false)} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-200">
+                <button onClick={() => setEditando(false)} className="flex-1 py-2.5 rounded-xl border border-linea text-tinta">
                     Cancelar
                 </button>
             </div>

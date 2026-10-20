@@ -10,7 +10,19 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="TempoMio" />
   <link rel="apple-touch-icon" href="/icon-192.png" />
-  <meta name="theme-color" content="#f3f5f8" />
+  <meta name="theme-color" content="#f5f3ef" />
+  <script>
+    // Aplica el tema antes de pintar para evitar un destello del tema contrario (ver src/lib/tema.ts)
+    (function () {
+      var tema = null
+      try { tema = localStorage.getItem('tempomio-tema') } catch (e) { }
+      if (tema !== 'claro' && tema !== 'oscuro') {
+        tema = matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro'
+      }
+      document.documentElement.dataset.tema = tema
+      if (tema === 'oscuro') document.querySelector('meta[name="theme-color"]').setAttribute('content', '#13171d')
+    })()
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet" />

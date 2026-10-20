@@ -36,7 +36,7 @@ export default function Racha({ userId, recarga }: Props) {
     if (racha === 0) return null
 
     return (
-        <p className="text-sm text-amber-300 mt-1">
+        <p className="text-sm text-aviso mt-1">
             🔥 {racha} {racha === 1 ? 'día seguido' : 'días seguidos'} fichando
         </p>
     )
