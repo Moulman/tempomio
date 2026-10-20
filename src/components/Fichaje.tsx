@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-    extraDelDia, formatDuracion, formatMinutos, formatReloj, minutosTrabajados, segundosDesde,
+    extraDelDia, fechaLarga, formatDuracion, formatMinutos, formatReloj, minutosTrabajados, segundosDesde,
 } from '../lib/schedule'
 import type { HorarioDia } from '../lib/schedule'
 import { useAhora } from '../lib/fichajeHoy'
@@ -74,15 +74,12 @@ export default function Fichaje({ fichajeHoy, horariosPorDia }: Props) {
     const progreso = teorico > 0 ? Math.min(100, (minutos / teorico) * 100) : 0
 
     const estado = enCurso ? 'En turno' : terminado ? 'Jornada terminada' : 'Sin fichar'
-    // "Martes, 20 de octubre": solo la primera letra en mayúscula (capitalize la pondría en cada palabra)
-    const fecha = hoy.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
-    const fechaLarga = fecha.charAt(0).toUpperCase() + fecha.slice(1)
 
     return (
         <section className="bg-superficie border border-linea rounded-2xl p-5 md:p-6">
             <div className="flex items-center justify-between gap-3">
                 <h2 className="text-base font-medium">
-                    {fechaLarga}
+                    {fechaLarga(hoy)}
                 </h2>
                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${enCurso
                     ? 'bg-acento/10 text-acento'

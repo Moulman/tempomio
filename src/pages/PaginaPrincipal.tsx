@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js'
 import type { HorarioDia } from '../lib/schedule'
 import type { FichajeHoy } from '../lib/fichajeHoy'
 import Fichaje from '../components/Fichaje'
-import Resumen from '../components/Resumen'
+import ResumenCorto from '../components/ResumenCorto'
 import Racha from '../components/Racha'
 
 interface Props {
@@ -24,7 +24,7 @@ export default function PaginaPrincipal({ session, nombre, horariosPorDia, ficha
             </div>
             <div className="space-y-4">
                 <Fichaje fichajeHoy={fichajeHoy} horariosPorDia={horariosPorDia} />
-                <Resumen userId={session.user.id} horariosPorDia={horariosPorDia} />
+                <ResumenCorto userId={session.user.id} horariosPorDia={horariosPorDia} recarga={fichajeHoy.version} />
             </div>
         </div>
     )

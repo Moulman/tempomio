@@ -7,6 +7,7 @@ import Login from './components/Login'
 import PaginaPrincipal from './pages/PaginaPrincipal'
 import PaginaPerfil from './pages/PaginaPerfil'
 import PaginaHistorial from './pages/PaginaHistorial'
+import PaginaSemana from './pages/PaginaSemana'
 import PaginaIdeas from './pages/PaginaIdeas'
 import PaginaAdmin from './pages/PaginaAdmin'
 import Estructura from './components/Estructura'
@@ -97,6 +98,16 @@ function App() {
           path="/historial"
           element={
             <PaginaHistorial
+              session={session}
+              horariosPorDia={horariosPorDia}
+              onDiaGuardado={fichajeHoy.recargar}
+            />
+          }
+        />
+        <Route
+          path="/semana"
+          element={
+            <PaginaSemana
               session={session}
               horariosPorDia={horariosPorDia}
               onDiaGuardado={fichajeHoy.recargar}

@@ -29,6 +29,12 @@ export const IconoHoy = (p: P) => (
     </Icono>
 )
 
+export const IconoSemana = (p: P) => (
+    <Icono {...p}>
+        <path d="M4 6h16M4 12h16M4 18h10" />
+    </Icono>
+)
+
 export const IconoHistorial = (p: P) => (
     <Icono {...p}>
         <rect x="3.5" y="5" width="17" height="15" rx="2.5" />

@@ -7,7 +7,7 @@ import { formatReloj, segundosDesde } from '../lib/schedule'
 import { useAhora } from '../lib/fichajeHoy'
 import type { FichajeHoy } from '../lib/fichajeHoy'
 import {
-    IconoAdmin, IconoHistorial, IconoHoy, IconoIdeas, IconoLuna, IconoPerfil, IconoSalir, IconoSol, Marca,
+    IconoAdmin, IconoHistorial, IconoHoy, IconoIdeas, IconoLuna, IconoPerfil, IconoSalir, IconoSemana, IconoSol, Marca,
 } from './Iconos'
 
 interface Props {
@@ -22,6 +22,8 @@ interface Seccion {
     ruta: string
     titulo: string
     Icono: ComponentType<SVGProps<SVGSVGElement>>
+    // Fuera de la barra inferior del móvil (para no pasar de 5 iconos); en móvil se llega desde Perfil
+    soloEscritorio?: boolean
 }
 
 // Barra lateral en escritorio (md+) y barra inferior en móvil, con las mismas secciones
@@ -46,8 +48,9 @@ export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, 
 
     const secciones: Seccion[] = [
         { ruta: '/', titulo: 'Hoy', Icono: IconoHoy },
+        { ruta: '/semana', titulo: 'Semana', Icono: IconoSemana },
         { ruta: '/historial', titulo: 'Historial', Icono: IconoHistorial },
-        { ruta: '/ideas', titulo: 'Ideas', Icono: IconoIdeas },
+        { ruta: '/ideas', titulo: 'Ideas', Icono: IconoIdeas, soloEscritorio: true },
         { ruta: '/perfil', titulo: 'Perfil', Icono: IconoPerfil },
         ...(esAdmin ? [{ ruta: '/admin', titulo: 'Admin', Icono: IconoAdmin }] : []),
     ]
@@ -122,7 +125,7 @@ export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, 
 
             {/* ---------- Barra inferior (móvil) ---------- */}
             <nav className="md:hidden fixed inset-x-0 bottom-0 z-10 flex bg-superficie/95 backdrop-blur border-t border-linea pb-[env(safe-area-inset-bottom)]">
-                {secciones.map(({ ruta, titulo, Icono }) => (
+                {secciones.filter((s) => !s.soloEscritorio).map(({ ruta, titulo, Icono }) => (
                     <NavLink
                         key={ruta}
                         to={ruta}

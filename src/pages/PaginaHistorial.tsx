@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../supabaseClient'
-import { generarCalendario, extraDelDia } from '../lib/schedule'
+import { generarCalendario, extraDelDia, fechaLarga } from '../lib/schedule'
 import type { Fichaje, HorarioDia } from '../lib/schedule'
+import EditorDia from '../components/EditorDia'
 
 interface Props {
     session: Session
@@ -20,12 +21,8 @@ export default function PaginaHistorial({ session, horariosPorDia, onDiaGuardado
     const [mes, setMes] = useState(hoy.getMonth())
     const [fichajes, setFichajes] = useState<Record<string, Fichaje>>({})
 
-    // Día seleccionado y sus horas en edición
+    // Día seleccionado para editar
     const [diaSel, setDiaSel] = useState<string | null>(null)
-    const [entradaManual, setEntradaManual] = useState('')
-    const [salidaManual, setSalidaManual] = useState('')
-    const [notaManual, setNotaManual] = useState('')
-    const [guardando, setGuardando] = useState(false)
     // Se incrementa tras guardar un día para volver a cargar el mes
     const [recarga, setRecarga] = useState(0)
 
@@ -50,35 +47,10 @@ export default function PaginaHistorial({ session, horariosPorDia, onDiaGuardado
         return () => { cancelado = true }
     }, [anio, mes, session.user.id, recarga])
 
-    function seleccionarDia(fecha: string) {
-        setDiaSel(fecha)
-        const f = fichajes[fecha]
-        setEntradaManual(f?.hora_entrada?.slice(0, 5) || '')
-        setSalidaManual(f?.hora_salida?.slice(0, 5) || '')
-        setNotaManual(f?.nota || '')
-    }
-
-    async function guardarDia() {
-        if (!diaSel) return
-        setGuardando(true)
-        const { error } = await supabase
-            .from('fichajes')
-            .upsert(
-                {
-                    user_id: session.user.id,
-                    fecha: diaSel,
-                    hora_entrada: entradaManual || null,
-                    hora_salida: salidaManual || null,
-                    nota: notaManual || null,
-                },
-                { onConflict: 'user_id,fecha' }
-            )
-        setGuardando(false)
-        if (!error) {
-            setRecarga((n) => n + 1)
-            setDiaSel(null)
-            onDiaGuardado()
-        }
+    function diaGuardado() {
+        setRecarga((n) => n + 1)
+        setDiaSel(null)
+        onDiaGuardado()
     }
 
     function mesAnterior() {
@@ -127,7 +99,7 @@ export default function PaginaHistorial({ session, horariosPorDia, onDiaGuardado
                         return (
                             <button
                                 key={fecha}
-                                onClick={() => seleccionarDia(fecha)}
+                                onClick={() => setDiaSel(fecha)}
                                 className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-sm
                   ${seleccionado ? 'ring-2 ring-acento' : ''}
                   ${tieneFichaje
@@ -146,48 +118,18 @@ export default function PaginaHistorial({ session, horariosPorDia, onDiaGuardado
 
             {/* Panel de edición del día seleccionado */}
             {diaSel && (
-                <div className="bg-superficie border border-linea rounded-xl p-5">
+                <div className="bg-superficie border border-linea rounded-xl p-5 mt-4">
                     <h3 className="text-base font-medium mb-3">
-                        {new Date(diaSel + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        {fechaLarga(new Date(diaSel + 'T00:00:00'))}
                     </h3>
-                    <div className="flex gap-3 mb-4">
-                        <label className="flex-1 text-xs text-tinta-suave">
-                            Entrada
-                            <input
-                                type="time"
-                                value={entradaManual}
-                                onChange={(e) => setEntradaManual(e.target.value)}
-                                className="w-full mt-1 bg-fondo border border-linea rounded-lg px-2 py-2 text-base text-tinta"
-                            />
-                        </label>
-                        <label className="flex-1 text-xs text-tinta-suave">
-                            Salida
-                            <input
-                                type="time"
-                                value={salidaManual}
-                                onChange={(e) => setSalidaManual(e.target.value)}
-                                className="w-full mt-1 bg-fondo border border-linea rounded-lg px-2 py-2 text-base text-tinta"
-                            />
-                        </label>
-                    </div>
-                    <label className="block text-xs text-tinta-suave mb-4">
-                        Nota
-                        <textarea
-                            value={notaManual}
-                            onChange={(e) => setNotaManual(e.target.value)}
-                            placeholder="Motivo (opcional)"
-                            rows={2}
-                            className="w-full mt-1 bg-fondo border border-linea rounded-lg px-2 py-2 text-sm text-tinta"
-                        />
-                    </label>
-                    <div className="flex gap-2.5">
-                        <button onClick={guardarDia} disabled={guardando} className="flex-1 py-2.5 rounded-xl bg-acento text-sobre-acento font-semibold">
-                            {guardando ? 'Guardando...' : 'Guardar'}
-                        </button>
-                        <button onClick={() => setDiaSel(null)} className="flex-1 py-2.5 rounded-xl border border-linea text-tinta">
-                            Cancelar
-                        </button>
-                    </div>
+                    <EditorDia
+                        key={diaSel}
+                        userId={session.user.id}
+                        fecha={diaSel}
+                        fichaje={fichajes[diaSel]}
+                        onGuardado={diaGuardado}
+                        onCancelar={() => setDiaSel(null)}
+                    />
                 </div>
             )}
         </div>

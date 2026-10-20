@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../supabaseClient'
 import type { Tema } from '../lib/tema'
 import type { HorarioDia } from '../lib/schedule'
 import HorarioBase from '../components/HorarioBase'
-import { IconoLuna, IconoSalir, IconoSol } from '../components/Iconos'
+import { IconoIdeas, IconoLuna, IconoSalir, IconoSol } from '../components/Iconos'
 
 interface Props {
     session: Session
@@ -88,6 +89,19 @@ export default function PaginaPerfil({
                     </button>
                 </div>
             </div>
+
+            {/* En móvil Ideas no cabe en la barra inferior: se llega desde aquí */}
+            <Link
+                to="/ideas"
+                className="md:hidden mt-4 flex items-center gap-3 bg-superficie border border-linea rounded-xl p-5"
+            >
+                <IconoIdeas className="text-acento" />
+                <span className="flex-1">
+                    <span className="block font-medium">Ideas y sugerencias</span>
+                    <span className="block text-sm text-tinta-suave">Cuéntanos qué mejorarías</span>
+                </span>
+                <span className="text-tinta-tenue">›</span>
+            </Link>
 
             {/* En escritorio también está en la barra lateral */}
             <button
