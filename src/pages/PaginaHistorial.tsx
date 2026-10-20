@@ -24,27 +24,29 @@ export default function PaginaHistorial({ session, horariosPorDia }: Props) {
     const [salidaManual, setSalidaManual] = useState('')
     const [notaManual, setNotaManual] = useState('')
     const [guardando, setGuardando] = useState(false)
+    // Se incrementa tras guardar un día para volver a cargar el mes
+    const [recarga, setRecarga] = useState(0)
 
     useEffect(() => {
-        cargarFichajesMes()
-    }, [anio, mes])
-
-    async function cargarFichajesMes() {
+        let cancelado = false
         const desde = `${anio}-${String(mes + 1).padStart(2, '0')}-01`
         const ultimoDia = new Date(anio, mes + 1, 0).getDate()
         const hasta = `${anio}-${String(mes + 1).padStart(2, '0')}-${ultimoDia}`
 
-        const { data } = await supabase
+        supabase
             .from('fichajes')
             .select('*')
             .eq('user_id', session.user.id)
             .gte('fecha', desde)
             .lte('fecha', hasta)
-
-        const porFecha: Record<string, Fichaje> = {}
-        for (const f of data || []) porFecha[f.fecha] = f
-        setFichajes(porFecha)
-    }
+            .then(({ data }) => {
+                if (cancelado) return
+                const porFecha: Record<string, Fichaje> = {}
+                for (const f of data || []) porFecha[f.fecha] = f
+                setFichajes(porFecha)
+            })
+        return () => { cancelado = true }
+    }, [anio, mes, session.user.id, recarga])
 
     function seleccionarDia(fecha: string) {
         setDiaSel(fecha)
@@ -71,7 +73,7 @@ export default function PaginaHistorial({ session, horariosPorDia }: Props) {
             )
         setGuardando(false)
         if (!error) {
-            await cargarFichajesMes()
+            setRecarga((n) => n + 1)
             setDiaSel(null)
         }
     }

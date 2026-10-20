@@ -14,25 +14,24 @@ export default function Resumen({ userId, horariosPorDia }: Props) {
     const [cargando, setCargando] = useState(true)
 
     useEffect(() => {
-        cargarFichajes()
-    }, [])
-
-    async function cargarFichajes() {
-        setCargando(true)
+        let cancelado = false
         // Últimos ~4 meses: suficiente para semana y mes actuales + histórico reciente
         const desde = new Date()
         desde.setMonth(desde.getMonth() - 4)
 
-        const { data } = await supabase
+        supabase
             .from('fichajes')
             .select('*')
             .eq('user_id', userId)
             .gte('fecha', desde.toISOString().slice(0, 10))
             .order('fecha', { ascending: false })
-
-        setFichajes(data || [])
-        setCargando(false)
-    }
+            .then(({ data }) => {
+                if (cancelado) return
+                setFichajes(data || [])
+                setCargando(false)
+            })
+        return () => { cancelado = true }
+    }, [userId])
 
     if (cargando) return <p>Cargando resumen...</p>
 

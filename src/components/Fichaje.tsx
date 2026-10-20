@@ -28,20 +28,20 @@ export default function Fichaje({ userId, horariosPorDia, onCambio }: Props) {
     const [notaManual, setNotaManual] = useState('')
 
     useEffect(() => {
-        cargarFichajeHoy()
-    }, [])
-
-    async function cargarFichajeHoy() {
-        setCargando(true)
-        const { data } = await supabase
+        let cancelado = false
+        supabase
             .from('fichajes')
             .select('*')
             .eq('user_id', userId)
             .eq('fecha', fechaHoy())
             .maybeSingle()
-        setFichaje(data)
-        setCargando(false)
-    }
+            .then(({ data }) => {
+                if (cancelado) return
+                setFichaje(data)
+                setCargando(false)
+            })
+        return () => { cancelado = true }
+    }, [userId])
 
     async function marcarEntrada() {
         const { data, error } = await supabase
