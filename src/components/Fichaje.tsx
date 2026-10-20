@@ -122,7 +122,7 @@ export default function Fichaje({ userId, horariosPorDia, onCambio }: Props) {
     const extra = fichaje ? extraDelDia(fichaje, horarioHoy) : 0
 
     return (
-        <div className="bg-slate-800 rounded-2xl p-5 mt-4">
+        <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
             <h2 className="text-base font-medium capitalize mb-4">
                 {hoy.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
             </h2>

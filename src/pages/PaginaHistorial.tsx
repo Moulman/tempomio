@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../supabaseClient'
 import { generarCalendario, extraDelDia } from '../lib/schedule'
@@ -92,13 +91,12 @@ export default function PaginaHistorial({ session, horariosPorDia }: Props) {
     const celdas = generarCalendario(anio, mes)
 
     return (
-        <div className="max-w-md mx-auto px-4 py-6">
+        <div className="max-w-3xl mx-auto px-4 py-6 md:px-8 md:py-8">
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-semibold">Historial</h1>
-                <Link to="/" className="text-sm text-sky-400 hover:text-sky-300">← Volver</Link>
             </div>
 
-            <div className="bg-slate-800 rounded-2xl p-5">
+            <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
                 <div className="flex justify-between items-center mb-4">
                     <button onClick={mesAnterior} className="px-3 py-1 rounded-lg text-slate-400 hover:text-slate-100">‹</button>
                     <span className="font-medium capitalize">{MESES[mes]} {anio}</span>
@@ -143,7 +141,7 @@ export default function PaginaHistorial({ session, horariosPorDia }: Props) {
 
             {/* Panel de edición del día seleccionado */}
             {diaSel && (
-                <div className="bg-slate-800 rounded-2xl p-5 mt-4">
+                <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
                     <h3 className="text-base font-medium mb-3">
                         {new Date(diaSel + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
                     </h3>

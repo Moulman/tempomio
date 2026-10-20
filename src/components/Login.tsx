@@ -73,7 +73,7 @@ export default function Login() {
                     </p>
                 </div>
 
-                <div className="bg-slate-800 rounded-2xl p-6 shadow-xl shadow-black/20 border border-slate-700/50">
+                <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-sm ">
                     <div className="flex gap-1 mb-5 bg-slate-900 rounded-xl p-1">
                         <button
                             type="button"

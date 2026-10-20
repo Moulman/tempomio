@@ -40,7 +40,7 @@ export default function Resumen({ userId, horariosPorDia }: Props) {
     const meses = agruparPorMes(fichajes, horariosPorDia)
 
     return (
-        <div className="bg-slate-800 rounded-2xl p-5 mt-4">
+        <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
             <div className="flex gap-2 mb-4">
                 <button
                     onClick={() => setVista('semana')}

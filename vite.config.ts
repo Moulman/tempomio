@@ -14,8 +14,8 @@ export default defineConfig({
         name: 'TempoMio',
         short_name: 'TempoMio',
         description: 'Registro de entrada y salida con cálculo de horas extra',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        theme_color: '#f3f5f8',
+        background_color: '#f3f5f8',
         display: 'standalone',
         start_url: '/',
         icons: [

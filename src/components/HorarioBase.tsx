@@ -86,7 +86,7 @@ export default function HorarioBase({ userId, horariosPorDia, onActualizado }: P
     // ---------- Modo vista ----------
     if (!editando) {
         return (
-            <div className="bg-slate-800 rounded-2xl p-5 mt-4">
+            <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
                 <div className="flex justify-between items-center mb-3">
                     <h3 className="text-base font-medium">Horario base</h3>
                     <button
@@ -115,7 +115,7 @@ export default function HorarioBase({ userId, horariosPorDia, onActualizado }: P
 
     // ---------- Modo edición ----------
     return (
-        <div className="bg-slate-800 rounded-2xl p-5 mt-4">
+        <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
             <h3 className="text-base font-medium mb-3">Editar horario base</h3>
             {DIAS.map((nombre, i) => (
                 <div key={i} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 py-1.5">
