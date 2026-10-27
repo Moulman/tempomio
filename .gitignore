@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Claude Code: preferencias personales (no se comparten)
+CLAUDE.local.md
+.claude/settings.local.json
