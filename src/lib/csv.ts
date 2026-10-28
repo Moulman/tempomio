@@ -10,6 +10,14 @@ function hm(mins: number): string {
     return `${signo}${Math.floor(abs / 60)}:${String(abs % 60).padStart(2, '0')}`
 }
 
+// Texto libre de la usuaria (notas): si empieza por =, +, -, @, tabulador o
+// retorno, Excel podría ejecutarlo como fórmula ("CSV injection", OWASP). Con un
+// apóstrofo delante lo muestra como texto. Solo para textos, nunca para horas
+// calculadas como "-0:30", que deben seguir siendo números para Excel.
+function textoSeguro(valor: string): string {
+    return /^[=+\-@\t\r]/.test(valor) ? `'${valor}` : valor
+}
+
 // Entre comillas si hace falta (separador, comillas o saltos de línea en notas)
 function celda(valor: string): string {
     return /[;"\n\r]/.test(valor) ? `"${valor.replace(/"/g, '""')}"` : valor
@@ -47,7 +55,7 @@ export function csvDelMes(fichajes: Fichaje[], horariosPorDia: (HorarioDia | nul
             bolsa ? hm(bolsa) : '',
             hm(previsto),
             completo ? hm(extra) : '',
-            f.nota ?? '',
+            textoSeguro(f.nota ?? ''),
         ])
     }
 
