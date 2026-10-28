@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "TZ=Europe/Madrid vitest run",
+    "test:watch": "TZ=Europe/Madrid vitest"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
@@ -30,6 +32,7 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.69.0",
     "vite": "^8.3.0",
-    "vite-plugin-pwa": "^1.3.0"
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^5.0.5"
   }
 }

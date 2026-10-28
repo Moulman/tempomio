@@ -22,7 +22,10 @@ Dueño: Mansour Mouldi (GitHub: Moulman). Repo: github.com/Moulman/tempomio. Pro
 - `npm run build`: comprobación de tipos (`tsc -b`) y build de producción
 - `npm run lint`: ESLint
 - `npm run preview`: sirve el build
-- No hay tests automáticos todavía. Antes de dar algo por terminado: `npm run build && npm run lint` sin errores.
+- `npm test`: tests unitarios con Vitest (`src/**/*.test.ts`, en hora de Madrid). `npm run test:watch` para modo continuo.
+- `supabase test db`: tests de RLS con pgTAP (`supabase/tests/database/`). Solo contra Supabase local (`supabase start`).
+- Antes de dar algo por terminado: `npm run build && npm run lint && npm test` sin errores. Si tocas policies o migraciones, también `supabase test db`.
+- Toda lógica nueva en `src/lib/` lleva sus tests; todo bug corregido, un test que lo reproduzca.
 
 ## Stack
 

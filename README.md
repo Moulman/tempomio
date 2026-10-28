@@ -140,6 +140,8 @@ Accounts are created by hand in Supabase (Authentication → Users). To make som
 | `npm run build` | Type-check and build for production |
 | `npm run preview` | Preview the production build locally |
 | `npm run lint` | Run ESLint |
+| `npm test` | Run unit tests (Vitest) |
+| `supabase test db` | Run database and RLS tests (pgTAP) against local Supabase |
 
 ### Environment variables
 
@@ -158,7 +160,7 @@ Accounts are created by hand in Supabase (Authentication → Users). To make som
 
 - The interface is in Spanish only.
 - No self-service sign-up yet: users request access and an admin creates the account.
-- No automated tests yet. Quality gates today are the TypeScript compiler and ESLint.
+- Test coverage is growing: unit tests cover the overtime and hours-bank logic, and pgTAP tests cover Row Level Security. End-to-end tests and CI are next.
 - Single clock-in per day, by design.
 
 ## License
