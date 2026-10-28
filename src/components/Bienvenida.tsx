@@ -94,8 +94,8 @@ export default function Bienvenida({ session, nombre, horariosPorDia, bolsa, onP
                     <section className="space-y-4">
                         <h1 className="text-2xl font-semibold">Tu horario</h1>
                         <p className="text-tinta-suave">
-                            Con él calculamos tus horas extra. Pulsa «Editar» y pon tu entrada y salida de cada día;
-                            deja vacíos los días que libras.
+                            Con él calculamos tus horas extra. Pulsa «Editar», pon tu entrada y salida de cada día
+                            y marca «Libre» los días que no trabajas.
                         </p>
                         <HorarioBase userId={session.user.id} horariosPorDia={horariosPorDia} onActualizado={onHorariosActualizados} />
                         <button
