@@ -32,3 +32,13 @@ export async function completarBienvenida(page: Page, nombre: string) {
     await page.getByRole('button', { name: 'Lo pondré más tarde' }).click()
     await page.getByRole('button', { name: 'Empiezo de cero' }).click()
 }
+
+// Bienvenida con saldo inicial en la bolsa (a fecha de hoy)
+export async function completarBienvenidaConSaldo(page: Page, nombre: string, horas: number) {
+    await page.getByPlaceholder('Tu nombre').fill(nombre)
+    await page.getByRole('button', { name: 'Continuar' }).click()
+    await page.getByRole('button', { name: 'Lo pondré más tarde' }).click()
+    await page.getByRole('button', { name: 'Ya tengo horas acumuladas' }).click()
+    await page.getByLabel('Horas', { exact: true }).fill(String(horas))
+    await page.getByRole('button', { name: 'Empezar' }).click()
+}
