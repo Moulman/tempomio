@@ -14,7 +14,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(16);
+select plan(19);
 
 -- ---------- Datos de prueba (como postgres, sin RLS) ----------
 insert into auth.users (id, email) values
@@ -73,6 +73,14 @@ select throws_ok(
   'A no puede crear fichajes a nombre de B');
 
 select lives_ok(
+  $$ insert into sugerencias (user_id, prioridad, texto) values ('00000000-0000-0000-0000-00000000000a', 'estaria_guay', 'Idea de A') $$,
+  'A puede enviar su propia idea');
+select throws_ok(
+  $$ insert into sugerencias (user_id, prioridad, texto) values ('00000000-0000-0000-0000-00000000000b', 'bug', 'Suplantando a B') $$,
+  '42501', null,
+  'A no puede enviar ideas a nombre de B');
+
+select lives_ok(
   $$ update perfiles set es_admin = true where id = '00000000-0000-0000-0000-00000000000a' $$,
   'A puede intentar actualizar su perfil');
 select is((select es_admin from perfiles where id = '00000000-0000-0000-0000-00000000000a'), false,
@@ -110,6 +118,8 @@ select is((select count(*)::int from fichajes where user_id in ('00000000-0000-0
 select is_empty(
   $$ update fichajes set nota = 'cambiado' where user_id = '00000000-0000-0000-0000-00000000000a' returning id $$,
   'La admin no puede modificar fichajes ajenos');
+select is((select count(*)::int from sugerencias where user_id in ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000b')), 2,
+  'La admin ve las ideas de todas (la de A y la de B)');
 
 select * from finish();
 rollback;
