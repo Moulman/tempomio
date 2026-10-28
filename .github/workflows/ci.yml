@@ -1,0 +1,54 @@
+# CI de TempoMio: se ejecuta en cada push y en cada pull request.
+# No despliega nada ni usa secretos: Vercel sigue desplegando por su cuenta,
+# y los tests de base de datos corren contra un Supabase local temporal.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# Si llega otro push a la misma rama, se cancela la ejecución anterior
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    name: Lint, tipos, build y tests unitarios
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - name: Build (tsc + vite)
+        run: npm run build
+        env:
+          # Valores falsos: el build no necesita conectarse a Supabase
+          VITE_SUPABASE_URL: http://127.0.0.1:54321
+          VITE_SUPABASE_ANON_KEY: clave-falsa-de-ci
+
+  base-de-datos:
+    name: Tests de RLS (pgTAP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+
+      # Supabase local dentro del runner: aplica las migraciones en una base vacía
+      - run: supabase db start
+      - run: supabase test db
