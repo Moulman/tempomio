@@ -46,6 +46,8 @@ React 19, TypeScript 6, Vite 8, Tailwind CSS 4, React Router 7, supabase-js 2, v
 - Extra del día = minutos trabajados − minutos del horario base de ese día de la semana. Sin horario ese día, todo cuenta como extra. Los turnos que cruzan la medianoche se calculan bien (`minutosTrabajados`).
 - Extras y bolsa se calculan en el cliente al mostrarlos; no se guarda nada derivado. Bolsa disponible = ajustes (incluido el saldo inicial) + extra ganado − déficit − horas usadas. Solo cuentan los fichajes desde la fecha del saldo inicial. Vive en `calcularBolsa` (`src/lib/bolsa.ts`): son horas de personas reales, así que cualquier cambio ahí se revisa con cuidado y se explica.
 - `fichajes.bolsa_minutos` son los minutos de bolsa usados ese día (mayor que 0).
+- Los minutos se calculan con horas de reloj: un turno de noche la noche del cambio de hora sale con 1h de diferencia. Decisión: se acepta porque ahora no hay turnos de noche (hay un `it.todo` en `schedule.test.ts`). No lo cambies sin preguntar.
+- Las notas del CSV pasan por `textoSeguro()` (protección contra CSV injection). Cualquier texto libre nuevo que vaya al CSV también.
 - Las horas son columnas `time` de Postgres y llegan como `HH:MM:SS`: para mostrarlas usa `.slice(0, 5)`.
 - `horarios_base.dia_semana`: 0 = domingo … 6 = sábado, igual que `Date.getDay()`. El calendario, en cambio, empieza en lunes.
 - Fechas de día siempre en hora local con `fechaLocal()` (formato `YYYY-MM-DD`). Nunca `toISOString().slice(0, 10)`: da la fecha en UTC y en España se desplaza un día.
