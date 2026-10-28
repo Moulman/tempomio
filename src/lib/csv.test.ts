@@ -6,7 +6,7 @@ import type { Fichaje, HorarioDia } from './schedule'
 const laborable: HorarioDia = { hora_entrada: '09:00', hora_salida: '17:00', activo: true }
 const horarios: (HorarioDia | null)[] = [null, laborable, laborable, laborable, laborable, laborable, null]
 
-const CABECERA = 'Fecha;Día;Entrada;Salida;Trabajado;Bolsa usada;Previsto;Extra;Nota'
+const CABECERA = 'Fecha;Día;Tipo;Entrada;Salida;Trabajado;Bolsa usada;Previsto;Extra;Nota'
 
 function dia(fecha: string, entrada: string | null, salida: string | null, extras: Partial<Fichaje> = {}): Fichaje {
     return { fecha, hora_entrada: entrada, hora_salida: salida, ...extras }
@@ -33,39 +33,49 @@ describe('csvDelMes: formato para Excel en español', () => {
     })
 
     it('un mes vacío tiene cabecera y una fila de totales a cero', () => {
-        expect(filas(csvDelMes([], horarios))).toEqual([CABECERA, 'Total;;;;0:00;0:00;0:00;0:00;'])
+        expect(filas(csvDelMes([], horarios))).toEqual([CABECERA, 'Total;;;;;0:00;0:00;0:00;0:00;'])
     })
 })
 
 describe('csvDelMes: filas de cada día', () => {
     it('un día completo muestra fecha, día, horas, trabajado, previsto y extra', () => {
         const csv = csvDelMes([dia('2026-10-01', '09:00:12', '18:30:00')], horarios) // jueves
-        expect(filas(csv)[1]).toBe('01/10/2026;jueves;09:00;18:30;9:30;;8:00;1:30;')
+        expect(filas(csv)[1]).toBe('01/10/2026;jueves;Jornada;09:00;18:30;9:30;;8:00;1:30;')
     })
 
     it('un día por debajo del horario muestra el extra negativo', () => {
         const csv = csvDelMes([dia('2026-10-02', '09:00', '16:30')], horarios) // viernes
-        expect(filas(csv)[1]).toBe('02/10/2026;viernes;09:00;16:30;7:30;;8:00;-0:30;')
+        expect(filas(csv)[1]).toBe('02/10/2026;viernes;Jornada;09:00;16:30;7:30;;8:00;-0:30;')
     })
 
     it('un fin de semana sin horario cuenta todo como extra', () => {
         const csv = csvDelMes([dia('2026-10-03', '10:00', '12:00')], horarios) // sábado
-        expect(filas(csv)[1]).toBe('03/10/2026;sábado;10:00;12:00;2:00;;0:00;2:00;')
+        expect(filas(csv)[1]).toBe('03/10/2026;sábado;Jornada;10:00;12:00;2:00;;0:00;2:00;')
     })
 
-    it('un día sin salida deja vacíos trabajado y extra', () => {
+    it('un día sin salida se marca así y deja vacíos trabajado, previsto y extra', () => {
         const csv = csvDelMes([dia('2026-10-05', '09:00', null)], horarios) // lunes
-        expect(filas(csv)[1]).toBe('05/10/2026;lunes;09:00;;;;8:00;;')
+        expect(filas(csv)[1]).toBe('05/10/2026;lunes;Sin salida;09:00;;;;;;')
+    })
+
+    it('un día con salida pero sin entrada se marca como "Sin entrada"', () => {
+        const csv = csvDelMes([dia('2026-10-05', null, '17:00')], horarios)
+        expect(filas(csv)[1]).toBe('05/10/2026;lunes;Sin entrada;;17:00;;;;;')
+    })
+
+    it('un día con solo una nota se marca como "Sin fichar"', () => {
+        const csv = csvDelMes([dia('2026-10-05', null, null, { nota: 'Formación' })], horarios)
+        expect(filas(csv)[1]).toBe('05/10/2026;lunes;Sin fichar;;;;;;;Formación')
     })
 
     it('salir antes usando bolsa muestra las horas de bolsa y deja el extra en 0', () => {
         const csv = csvDelMes([dia('2026-10-06', '09:00', '15:00', { bolsa_minutos: 120 })], horarios) // martes
-        expect(filas(csv)[1]).toBe('06/10/2026;martes;09:00;15:00;6:00;2:00;8:00;0:00;')
+        expect(filas(csv)[1]).toBe('06/10/2026;martes;Jornada;09:00;15:00;6:00;2:00;8:00;0:00;')
     })
 
-    it('un día libre con bolsa muestra solo las horas de bolsa', () => {
+    it('un día libre con bolsa se marca como "Día libre (bolsa)" con sus horas', () => {
         const csv = csvDelMes([dia('2026-10-07', null, null, { bolsa_minutos: 480 })], horarios) // miércoles
-        expect(filas(csv)[1]).toBe('07/10/2026;miércoles;;;;8:00;8:00;;')
+        expect(filas(csv)[1]).toBe('07/10/2026;miércoles;Día libre (bolsa);;;;8:00;8:00;;')
     })
 
     it('ordena los días por fecha aunque lleguen desordenados', () => {
@@ -131,17 +141,29 @@ describe('csvDelMes: fila de totales', () => {
             ],
             horarios,
         )
-        expect(filas(csv).at(-1)).toBe('Total;;;;22:30;2:00;24:00;0:30;')
+        expect(filas(csv).at(-1)).toBe('Total;;;;;22:30;2:00;24:00;0:30;')
     })
 
-    // Comportamiento actual, documentado: los días incompletos muestran su
-    // "Previsto" en la fila, pero no entran en el total previsto. Así el total de
-    // esa columna no coincide con la suma que haría Excel. Pendiente de decidir.
-    it('el total previsto solo suma los días completos', () => {
+    it('los días libres con bolsa cuentan en el previsto: trabajado + bolsa cuadra con previsto + extra', () => {
         const csv = csvDelMes(
             [dia('2026-10-01', '09:00', '17:00'), dia('2026-10-07', null, null, { bolsa_minutos: 480 })],
             horarios,
         )
-        expect(filas(csv).at(-1)).toBe('Total;;;;8:00;8:00;8:00;0:00;')
+        // 8h trabajadas + 8h de bolsa = 16h previstas + 0 de extra
+        expect(filas(csv).at(-1)).toBe('Total;;;;;8:00;8:00;16:00;0:00;')
+    })
+
+    it('el total previsto es exactamente la suma de su columna', () => {
+        const csv = csvDelMes(
+            [
+                dia('2026-10-01', '09:00', '17:00'), // Jornada: 8:00
+                dia('2026-10-05', '09:00', null), // Sin salida: vacío
+                dia('2026-10-07', null, null, { bolsa_minutos: 240 }), // Día libre (bolsa): 8:00
+            ],
+            horarios,
+        )
+        const columnaPrevisto = filas(csv).slice(1, -1).map((f) => f.split(';')[7])
+        expect(columnaPrevisto).toEqual(['8:00', '', '8:00'])
+        expect(filas(csv).at(-1)?.split(';')[7]).toBe('16:00')
     })
 })

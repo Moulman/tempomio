@@ -23,10 +23,24 @@ function celda(valor: string): string {
     return /[;"\n\r]/.test(valor) ? `"${valor.replace(/"/g, '""')}"` : valor
 }
 
+export type TipoDia = 'Jornada' | 'Día libre (bolsa)' | 'Sin salida' | 'Sin entrada' | 'Sin fichar'
+
+// Qué fue cada día, para la columna "Tipo" del CSV
+export function tipoDeDia(f: Fichaje): TipoDia {
+    if (f.hora_entrada && f.hora_salida) return 'Jornada'
+    if (f.hora_entrada) return 'Sin salida'
+    if (f.hora_salida) return 'Sin entrada'
+    if (f.bolsa_minutos) return 'Día libre (bolsa)'
+    return 'Sin fichar'
+}
+
 // CSV de un mes: una fila por día fichado y una fila final de totales.
 // Separador ";" y BOM para que Excel en español lo abra con columnas y acentos correctos.
+// "Previsto" solo se rellena en los días que cuentan (jornadas y días libres con
+// bolsa) y su total es la suma exacta de la columna: así trabajado + bolsa cuadra
+// con previsto + extra. Los días incompletos no se pueden evaluar y van vacíos.
 export function csvDelMes(fichajes: Fichaje[], horariosPorDia: (HorarioDia | null)[]): string {
-    const filas: string[][] = [['Fecha', 'Día', 'Entrada', 'Salida', 'Trabajado', 'Bolsa usada', 'Previsto', 'Extra', 'Nota']]
+    const filas: string[][] = [['Fecha', 'Día', 'Tipo', 'Entrada', 'Salida', 'Trabajado', 'Bolsa usada', 'Previsto', 'Extra', 'Nota']]
     let totalTrabajado = 0
     let totalPrevisto = 0
     let totalExtra = 0
@@ -35,32 +49,35 @@ export function csvDelMes(fichajes: Fichaje[], horariosPorDia: (HorarioDia | nul
     for (const f of [...fichajes].sort((a, b) => a.fecha.localeCompare(b.fecha))) {
         const d = new Date(f.fecha + 'T00:00:00')
         const horario = horariosPorDia[d.getDay()]
-        const previsto = horario?.activo ? minutosTrabajados(horario.hora_entrada, horario.hora_salida) : 0
-        const completo = !!f.hora_entrada && !!f.hora_salida
+        const tipo = tipoDeDia(f)
+        const completo = tipo === 'Jornada'
+        const cuenta = completo || tipo === 'Día libre (bolsa)'
+        const previsto = cuenta && horario?.activo ? minutosTrabajados(horario.hora_entrada, horario.hora_salida) : 0
         const trabajado = completo ? minutosTrabajados(f.hora_entrada, f.hora_salida) : 0
         const extra = completo ? extraDelDia(f, horario) : 0
         const bolsa = f.bolsa_minutos ?? 0
         totalBolsa += bolsa
+        if (cuenta) totalPrevisto += previsto
         if (completo) {
             totalTrabajado += trabajado
-            totalPrevisto += previsto
             totalExtra += extra
         }
         filas.push([
             d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
             DIAS[d.getDay()],
+            tipo,
             f.hora_entrada?.slice(0, 5) ?? '',
             f.hora_salida?.slice(0, 5) ?? '',
             completo ? hm(trabajado) : '',
             bolsa ? hm(bolsa) : '',
-            hm(previsto),
+            cuenta ? hm(previsto) : '',
             completo ? hm(extra) : '',
             textoSeguro(f.nota ?? ''),
         ])
     }
 
-    filas.push(['Total', '', '', '', hm(totalTrabajado), hm(totalBolsa), hm(totalPrevisto), hm(totalExtra), ''])
-    return '﻿' + filas.map((fila) => fila.map(celda).join(';')).join('\r\n') + '\r\n'
+    filas.push(['Total', '', '', '', '', hm(totalTrabajado), hm(totalBolsa), hm(totalPrevisto), hm(totalExtra), ''])
+    return '\uFEFF' + filas.map((fila) => fila.map(celda).join(';')).join('\r\n') + '\r\n'
 }
 
 export function descargarArchivo(nombre: string, contenido: string, tipo = 'text/csv;charset=utf-8') {

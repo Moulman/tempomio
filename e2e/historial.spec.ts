@@ -34,6 +34,6 @@ test('corregir a mano un día en Historial y descargar el CSV del mes', async ({
     const archivo = await descarga
     expect(archivo.suggestedFilename()).toMatch(/^tempomio-\d{4}-\d{2}\.csv$/)
     const contenido = await readFile(await archivo.path(), 'utf-8')
-    expect(contenido).toContain('Fecha;Día;Entrada;Salida;Trabajado;Bolsa usada;Previsto;Extra;Nota')
-    expect(contenido).toContain(';09:00;17:30;8:30;;0:00;8:30;Olvidé fichar')
+    expect(contenido).toContain('Fecha;Día;Tipo;Entrada;Salida;Trabajado;Bolsa usada;Previsto;Extra;Nota')
+    expect(contenido).toContain(';Jornada;09:00;17:30;8:30;;0:00;8:30;Olvidé fichar')
 })
