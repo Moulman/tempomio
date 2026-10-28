@@ -96,10 +96,29 @@ describe('csvDelMes: notas con caracteres especiales', () => {
         expect(filas(csv)[1].endsWith(';"Línea 1\nLínea 2"')).toBe(true)
     })
 
-    // Una nota que empieza por =, +, - o @ Excel la puede ejecutar como fórmula
-    // ("CSV injection"). El riesgo aquí es bajo porque cada persona solo exporta
-    // sus propias notas, pero el CSV se envía a otras personas. Pendiente de decidir.
-    it.todo('una nota que empieza por = no se interpreta como fórmula en Excel')
+    // CSV injection (OWASP): Excel puede ejecutar como fórmula un texto que empieza
+    // por =, +, -, @, tabulador o retorno. Se antepone ' para que lo muestre como texto.
+    it.each([
+        ['=SUMA(A1:A9)', "'=SUMA(A1:A9)"],
+        ['+34 600 000 000', "'+34 600 000 000"],
+        ['-salí antes', "'-salí antes"],
+        ['@jefa', "'@jefa"],
+        ['\t=1+1', "'\t=1+1"],
+    ])('una nota que empieza por un carácter de fórmula (%j) se exporta como texto', (nota, esperado) => {
+        const csv = csvDelMes([dia('2026-10-01', '09:00', '17:00', { nota })], horarios)
+        expect(filas(csv)[1].endsWith(`;${esperado}`)).toBe(true)
+    })
+
+    it('si además lleva punto y coma, va entre comillas y con el apóstrofo', () => {
+        const csv = csvDelMes([dia('2026-10-01', '09:00', '17:00', { nota: '=A1;B1' })], horarios)
+        expect(filas(csv)[1].endsWith(`;"'=A1;B1"`)).toBe(true)
+    })
+
+    it('las horas negativas calculadas no llevan apóstrofo (siguen siendo números para Excel)', () => {
+        const csv = csvDelMes([dia('2026-10-02', '09:00', '16:30')], horarios)
+        expect(filas(csv)[1]).toContain(';-0:30;')
+        expect(filas(csv)[1]).not.toContain("'")
+    })
 })
 
 describe('csvDelMes: fila de totales', () => {

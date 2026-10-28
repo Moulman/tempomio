@@ -51,7 +51,8 @@ describe('minutosTrabajados', () => {
 
     // Hoy se calcula con horas de reloj. La noche del cambio de hora (25 oct 2026,
     // a las 3:00 vuelven a ser las 2:00) un turno de 22:00 a 06:00 dura 9h reales,
-    // pero sale 8h. Hay que decidir si se cuenta tiempo real antes de cambiarlo.
+    // pero sale 8h. Decisión (oct 2026): no se cambia, porque ahora nadie hace turnos
+    // de noche. Si aparecen, hay que decidir si se cuenta el tiempo real.
     it.todo('turno de noche en el cambio de hora de octubre cuenta 9h reales')
 })
 
