@@ -52,3 +52,37 @@ jobs:
       # Supabase local dentro del runner: aplica las migraciones en una base vacía
       - run: supabase db start
       - run: supabase test db
+
+  e2e:
+    name: Tests E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+
+      # Supabase local completo (auth + API): los E2E inician sesión de verdad
+      - run: supabase start
+
+      - name: Instalar navegadores de Playwright
+        run: npx playwright install --with-deps chromium webkit
+
+      - run: npm run test:e2e
+
+      # Si algo falla, el informe con capturas y trazas queda descargable 7 días
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: informe-playwright
+          path: playwright-report/
+          retention-days: 7
