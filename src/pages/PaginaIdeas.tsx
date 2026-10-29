@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../supabaseClient'
 import { MAX_LONGITUD_IDEA, PRIORIDADES } from '../lib/sugerencias'
+import { guardarIdeaCerrada } from '../lib/pedirIdea'
 import type { Prioridad } from '../lib/sugerencias'
 
 interface Props {
@@ -38,6 +39,8 @@ export default function PaginaIdeas({ session }: Props) {
             setError('No se ha podido enviar. Inténtalo de nuevo en un momento.')
             return
         }
+        // Ya ha contado una idea hoy: no se le vuelve a pedir en Hoy
+        guardarIdeaCerrada(session.user.id)
         setEnviada(true)
     }
 
@@ -93,7 +96,11 @@ export default function PaginaIdeas({ session }: Props) {
                             })}
                         </div>
 
+                        <label htmlFor="texto-idea" className="block text-sm text-tinta-suave mb-1">
+                            Tu idea
+                        </label>
                         <textarea
+                            id="texto-idea"
                             value={texto}
                             onChange={(e) => setTexto(e.target.value)}
                             placeholder={PLACEHOLDERS[prioridad]}
