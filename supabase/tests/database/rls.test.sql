@@ -14,7 +14,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(19);
+select plan(24);
 
 -- ---------- Datos de prueba (como postgres, sin RLS) ----------
 insert into auth.users (id, email) values
@@ -43,6 +43,14 @@ insert into sugerencias (user_id, prioridad, texto) values
 
 insert into solicitudes_acceso (email) values ('existente@test.local');
 
+-- ---------- Estructura ----------
+-- En producción hubo policies hechas a mano con el id del admin fijo
+-- (ver migración 20261029100000_solicitudes_es_admin.sql): solo deben
+-- quedar estas tres, todas basadas en es_admin().
+select policies_are('public', 'solicitudes_acceso',
+  array['solicitudes_acceso_insert_public', 'solicitudes_acceso_select_admin', 'solicitudes_acceso_update_admin'],
+  'La lista de espera solo tiene las policies esperadas');
+
 -- ============================================================
 -- Como A (usuaria normal)
 -- ============================================================
@@ -60,6 +68,11 @@ select is((select count(*)::int from perfiles), 1,
   'A solo ve su propio perfil');
 select is((select count(*)::int from sugerencias), 0,
   'A no ve sugerencias (solo la admin)');
+select is_empty($$ select id from solicitudes_acceso $$,
+  'A no puede leer la lista de espera');
+select is_empty(
+  $$ update solicitudes_acceso set estado = 'aprobada' returning id $$,
+  'A no puede aprobar solicitudes');
 
 select is_empty(
   $$ update fichajes set nota = 'hackeado' where user_id = '00000000-0000-0000-0000-00000000000b' returning id $$,
@@ -120,6 +133,12 @@ select is_empty(
   'La admin no puede modificar fichajes ajenos');
 select is((select count(*)::int from sugerencias where user_id in ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000b')), 2,
   'La admin ve las ideas de todas (la de A y la de B)');
+
+select is((select count(*)::int from solicitudes_acceso where email in ('existente@test.local', 'nueva@test.local')), 2,
+  'La admin ve la lista de espera');
+select isnt_empty(
+  $$ update solicitudes_acceso set estado = 'aprobada' where email = 'existente@test.local' returning id $$,
+  'La admin puede aprobar una solicitud');
 
 select * from finish();
 rollback;
