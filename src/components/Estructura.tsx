@@ -38,6 +38,7 @@ const MOVIL_DERECHA: Seccion[] = [
     { ruta: '/perfil', titulo: 'Perfil', Icono: IconoPerfil },
 ]
 const RUTAS_DE_PERFIL = ['/perfil', '/ideas', '/admin']
+const esDePerfil = (ruta: string) => RUTAS_DE_PERFIL.some((r) => ruta === r || ruta.startsWith(`${r}/`))
 
 // Barra lateral en escritorio (md+) y barra inferior en móvil, con las mismas secciones
 export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, horariosPorDia, children }: Props) {
@@ -85,7 +86,7 @@ export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, 
     const estadoHoy = reloj ? `en turno ${reloj}` : terminado ? 'jornada terminada' : 'sin fichar'
 
     function pestanaMovil({ ruta, titulo, Icono }: Seccion) {
-        const activa = ruta === '/perfil' ? RUTAS_DE_PERFIL.includes(pathname) : pathname === ruta
+        const activa = ruta === '/perfil' ? esDePerfil(pathname) : pathname === ruta
         return (
             <Link
                 key={ruta}
@@ -115,7 +116,7 @@ export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, 
                         <NavLink
                             key={ruta}
                             to={ruta}
-                            end
+                            end={ruta === '/'}
                             className={({ isActive }) =>
                                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[15px] transition-colors ${isActive
                                     ? 'bg-acento/10 text-acento font-semibold'
