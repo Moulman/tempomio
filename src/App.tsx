@@ -19,6 +19,7 @@ import { fechaLocal } from './lib/schedule'
 import PaginaBolsa from './pages/PaginaBolsa'
 import Bienvenida from './components/Bienvenida'
 import ElegirContrasena from './components/ElegirContrasena'
+import AceptarInvitacion from './pages/AceptarInvitacion'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -71,6 +72,8 @@ function App() {
     setPerfilCargado(true)
   }
 
+  // Botón del email de invitación: funciona con o sin sesión abierta en este navegador
+  if (window.location.pathname === '/aceptar') return <AceptarInvitacion />
   if (cargando) return null
   if (!session) return <Login />
   // Entró por el enlace de una invitación: primero elige su contraseña

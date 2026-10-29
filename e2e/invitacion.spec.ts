@@ -37,11 +37,19 @@ test('la admin aprueba una solicitud, llega la invitación y la persona elige su
     await expect(page.getByText(`Invitación enviada a ${invitada} ✓`)).toBeVisible()
     await expect(page.getByRole('button', { name: `Aprobar e invitar a ${invitada}` })).toHaveCount(0)
 
-    // La invitada abre el email en su móvil (otra sesión) y pulsa el enlace
+    // El enlace lleva a la página /aceptar de TempoMio, no directamente a Supabase
     const enlace = await enlaceDeInvitacion(invitada)
+    expect(enlace).toContain('/aceptar?token_hash=')
+
+    // Un filtro de correo «abre» el enlace para revisarlo: no debe gastarlo
+    await fetch(enlace)
+
+    // La invitada abre el email en su móvil (otra sesión) y acepta
     const suMovil = await browser.newContext()
     const nueva = await suMovil.newPage()
     await nueva.goto(enlace)
+    await expect(nueva.getByRole('heading', { name: 'Te han invitado a TempoMio' })).toBeVisible()
+    await nueva.getByRole('button', { name: 'Aceptar la invitación' }).click()
 
     await expect(nueva.getByRole('heading', { name: 'Elige tu contraseña' })).toBeVisible()
     await nueva.getByLabel('Contraseña', { exact: true }).fill('corta')
@@ -54,6 +62,14 @@ test('la admin aprueba una solicitud, llega la invitación y la persona elige su
     await nueva.getByRole('button', { name: 'Guardar y entrar' }).click()
     await expect(nueva.getByRole('heading', { name: '¡Te damos la bienvenida a TempoMio!' })).toBeVisible()
     await suMovil.close()
+
+    // El mismo enlace, usado otra vez, ya no sirve y lo dice claramente
+    const otraVez = await browser.newContext()
+    const repetida = await otraVez.newPage()
+    await repetida.goto(enlace)
+    await repetida.getByRole('button', { name: 'Aceptar la invitación' }).click()
+    await expect(repetida.getByRole('heading', { name: 'Este enlace ya no sirve' })).toBeVisible()
+    await otraVez.close()
 
     // Otro día, en otro dispositivo, entra con su contraseña
     const otroDia = await browser.newContext()
