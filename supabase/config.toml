@@ -247,9 +247,10 @@ otp_expiry = 3600
 # sender_name = "Admin"
 
 # Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Email de invitación (el mismo texto hay que ponerlo en producción, ver el archivo)
+[auth.email.template.invite]
+subject = "Te han invitado a TempoMio"
+content_path = "./supabase/templates/invitacion.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
