@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ComponentType, ReactNode, SVGProps } from 'react'
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import type { Tema } from '../lib/tema'
 import { formatReloj, minutosTrabajados, segundosDesde } from '../lib/schedule'
@@ -8,8 +8,9 @@ import type { HorarioDia } from '../lib/schedule'
 import { useAhora } from '../lib/fichajeHoy'
 import type { FichajeHoy } from '../lib/fichajeHoy'
 import {
-    IconoAdmin, IconoBolsa, IconoHistorial, IconoHoy, IconoIdeas, IconoLuna, IconoPerfil, IconoSalir, IconoSemana, IconoSol, Marca,
+    IconoAdmin, IconoBolsa, IconoHecho, IconoHistorial, IconoHoy, IconoIdeas, IconoLuna, IconoPerfil, IconoSalir, IconoSemana, IconoSol, Marca,
 } from './Iconos'
+import AvisoDeshacer from './AvisoDeshacer'
 
 interface Props {
     esAdmin: boolean
@@ -24,9 +25,19 @@ interface Seccion {
     ruta: string
     titulo: string
     Icono: ComponentType<SVGProps<SVGSVGElement>>
-    // Fuera de la barra inferior del móvil (para no pasar de 5 iconos); en móvil se llega desde Perfil o Hoy
-    soloEscritorio?: boolean
 }
+
+// Barra inferior del móvil: dos pestañas a cada lado y Hoy en el centro.
+// Ideas y Admin no caben (máximo 5): en el móvil se abren desde Perfil.
+const MOVIL_IZQUIERDA: Seccion[] = [
+    { ruta: '/semana', titulo: 'Semana', Icono: IconoSemana },
+    { ruta: '/historial', titulo: 'Historial', Icono: IconoHistorial },
+]
+const MOVIL_DERECHA: Seccion[] = [
+    { ruta: '/bolsa', titulo: 'Bolsa', Icono: IconoBolsa },
+    { ruta: '/perfil', titulo: 'Perfil', Icono: IconoPerfil },
+]
+const RUTAS_DE_PERFIL = ['/perfil', '/ideas', '/admin']
 
 // Barra lateral en escritorio (md+) y barra inferior en móvil, con las mismas secciones
 export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, horariosPorDia, children }: Props) {
@@ -61,12 +72,34 @@ export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, 
         { ruta: '/', titulo: 'Hoy', Icono: IconoHoy },
         { ruta: '/semana', titulo: 'Semana', Icono: IconoSemana },
         { ruta: '/historial', titulo: 'Historial', Icono: IconoHistorial },
-        { ruta: '/bolsa', titulo: 'Bolsa de horas', Icono: IconoBolsa, soloEscritorio: true },
-        { ruta: '/ideas', titulo: 'Ideas', Icono: IconoIdeas, soloEscritorio: true },
+        { ruta: '/bolsa', titulo: 'Bolsa de horas', Icono: IconoBolsa },
+        { ruta: '/ideas', titulo: 'Ideas', Icono: IconoIdeas },
         { ruta: '/perfil', titulo: 'Perfil', Icono: IconoPerfil },
         ...(esAdmin ? [{ ruta: '/admin', titulo: 'Admin', Icono: IconoAdmin }] : []),
     ]
     const BotonTema = tema === 'claro' ? IconoLuna : IconoSol
+
+    // Estado del día para el botón central del móvil
+    const terminado = !!fichaje?.hora_entrada && !!fichaje?.hora_salida
+    const enHoy = pathname === '/'
+    const estadoHoy = reloj ? `en turno ${reloj}` : terminado ? 'jornada terminada' : 'sin fichar'
+
+    function pestanaMovil({ ruta, titulo, Icono }: Seccion) {
+        const activa = ruta === '/perfil' ? RUTAS_DE_PERFIL.includes(pathname) : pathname === ruta
+        return (
+            <Link
+                key={ruta}
+                to={ruta}
+                aria-current={activa ? 'page' : undefined}
+                className={`flex flex-col items-center justify-end gap-1 min-h-13 text-[11px] font-semibold ${activa ? 'text-acento' : 'text-tinta-suave'}`}
+            >
+                <span className={`flex items-center justify-center w-13 h-7 rounded-full ${activa ? 'bg-acento/10' : ''}`}>
+                    <Icono />
+                </span>
+                {titulo}
+            </Link>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-fondo text-tinta">
@@ -77,7 +110,7 @@ export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, 
                     <span className="text-lg font-semibold tracking-tight">TempoMio</span>
                 </div>
 
-                <nav className="flex flex-col gap-1">
+                <nav aria-label="Menú" className="flex flex-col gap-1">
                     {secciones.map(({ ruta, titulo, Icono }) => (
                         <NavLink
                             key={ruta}
@@ -114,7 +147,7 @@ export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, 
             </aside>
 
             {/* ---------- Contenido ---------- */}
-            <main className="md:pl-60 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
+            <main className="md:pl-60 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0">
                 {/* Turno abierto y fuera de Hoy: barra fina con el tiempo y la salida a mano */}
                 {reloj && pathname !== '/' && (
                     <div className="sticky top-0 z-10 bg-superficie/95 backdrop-blur border-b border-linea pt-[env(safe-area-inset-top)]">
@@ -135,22 +168,35 @@ export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, 
                 {children}
             </main>
 
+            <AvisoDeshacer fichajeHoy={fichajeHoy} />
+
             {/* ---------- Barra inferior (móvil) ---------- */}
-            <nav className="md:hidden fixed inset-x-0 bottom-0 z-10 flex bg-superficie/95 backdrop-blur border-t border-linea pb-[env(safe-area-inset-bottom)]">
-                {secciones.filter((s) => !s.soloEscritorio).map(({ ruta, titulo, Icono }) => (
-                    <NavLink
-                        key={ruta}
-                        to={ruta}
-                        end
-                        className={({ isActive }) =>
-                            `flex-1 flex flex-col items-center gap-0.5 pt-2.5 pb-2 text-[11px] font-medium ${isActive
-                                ? 'text-acento'
-                                : 'text-tinta-tenue'}`}
+            <nav
+                aria-label="Navegación principal"
+                className="md:hidden fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 items-end bg-superficie/95 backdrop-blur border-t border-linea px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]"
+            >
+                {MOVIL_IZQUIERDA.map(pestanaMovil)}
+
+                {/* Hoy en el centro: muestra el estado del día y lleva a Hoy (no ficha, para no marcar sin querer) */}
+                <Link
+                    to="/"
+                    aria-label={`Hoy, ${estadoHoy}`}
+                    aria-current={enHoy ? 'page' : undefined}
+                    className="flex flex-col items-center gap-1"
+                >
+                    <span
+                        className={`-mt-[30px] grid place-items-center w-[60px] h-[60px] rounded-full shadow-[0_0_0_5px_var(--superficie),0_6px_16px_rgba(29,36,48,0.18)] transition-colors ${enHoy ? 'outline-2 outline-offset-[3px] outline-acento' : ''} ${enCurso
+                            ? 'bg-tinta text-superficie'
+                            : terminado ? 'bg-positivo/15 text-positivo' : 'bg-acento text-sobre-acento'}`}
                     >
-                        <Icono />
-                        {ruta === '/' && reloj ? <span className="tabular-nums text-acento">{reloj}</span> : titulo}
-                    </NavLink>
-                ))}
+                        {terminado ? <IconoHecho width={26} height={26} /> : <IconoHoy width={26} height={26} />}
+                    </span>
+                    <span className={`text-[11px] font-bold tabular-nums ${enCurso ? 'text-tinta' : terminado ? 'text-positivo' : 'text-acento'}`}>
+                        {reloj ?? 'Hoy'}
+                    </span>
+                </Link>
+
+                {MOVIL_DERECHA.map(pestanaMovil)}
             </nav>
         </div>
     )

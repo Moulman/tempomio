@@ -5,11 +5,12 @@ import { supabase } from '../supabaseClient'
 import type { Tema } from '../lib/tema'
 import type { HorarioDia } from '../lib/schedule'
 import HorarioBase from '../components/HorarioBase'
-import { IconoIdeas, IconoLuna, IconoSalir, IconoSol } from '../components/Iconos'
+import { IconoAdmin, IconoIdeas, IconoLuna, IconoSalir, IconoSol } from '../components/Iconos'
 
 interface Props {
     session: Session
     nombre: string | null
+    esAdmin: boolean
     tema: Tema
     onAlternarTema: () => void
     horariosPorDia: (HorarioDia | null)[]
@@ -18,7 +19,7 @@ interface Props {
 }
 
 export default function PaginaPerfil({
-    session, nombre, tema, onAlternarTema, horariosPorDia, onHorariosActualizados, onPerfilActualizado,
+    session, nombre, esAdmin, tema, onAlternarTema, horariosPorDia, onHorariosActualizados, onPerfilActualizado,
 }: Props) {
     const [valor, setValor] = useState(nombre || '')
     const [guardando, setGuardando] = useState(false)
@@ -102,6 +103,21 @@ export default function PaginaPerfil({
                 </span>
                 <span className="text-tinta-tenue">›</span>
             </Link>
+
+            {/* Admin tampoco cabe en la barra inferior del móvil */}
+            {esAdmin && (
+                <Link
+                    to="/admin"
+                    className="md:hidden mt-4 flex items-center gap-3 bg-superficie border border-linea rounded-xl p-5"
+                >
+                    <IconoAdmin className="text-acento" />
+                    <span className="flex-1">
+                        <span className="block font-medium">Admin</span>
+                        <span className="block text-sm text-tinta-suave">Usuarias, lista de espera e ideas</span>
+                    </span>
+                    <span className="text-tinta-tenue">›</span>
+                </Link>
+            )}
 
             {/* En escritorio también está en la barra lateral */}
             <button

@@ -116,6 +116,7 @@ function App() {
             <PaginaPerfil
               session={session}
               nombre={nombre}
+              esAdmin={esAdmin}
               tema={tema}
               onAlternarTema={alternarTema}
               horariosPorDia={horariosPorDia}

@@ -29,6 +29,13 @@ export const IconoHoy = (p: P) => (
     </Icono>
 )
 
+// Jornada terminada (botón central de la barra del móvil)
+export const IconoHecho = (p: P) => (
+    <Icono strokeWidth="2.2" {...p}>
+        <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </Icono>
+)
+
 export const IconoSemana = (p: P) => (
     <Icono {...p}>
         <path d="M4 6h16M4 12h16M4 18h10" />
