@@ -18,6 +18,7 @@ import { calcularBolsa, useBolsa } from './lib/bolsa'
 import { fechaLocal } from './lib/schedule'
 import PaginaBolsa from './pages/PaginaBolsa'
 import Bienvenida from './components/Bienvenida'
+import ElegirContrasena from './components/ElegirContrasena'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -72,6 +73,8 @@ function App() {
 
   if (cargando) return null
   if (!session) return <Login />
+  // Entró por el enlace de una invitación: primero elige su contraseña
+  if (session.user.user_metadata?.contrasena_pendiente === true) return <ElegirContrasena session={session} />
 
   const resumenBolsa = calcularBolsa(bolsa.fichajes, bolsa.ajustes, horariosPorDia, fechaLocal(new Date()))
 

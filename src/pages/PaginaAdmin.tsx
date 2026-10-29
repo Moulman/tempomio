@@ -32,7 +32,8 @@ interface Sugerencia {
     created_at: string
 }
 
-type EstadoSolicitud = 'aprobada' | 'rechazada'
+// Aprobar pasa por la Edge Function «invitar»; aquí solo queda rechazar
+type EstadoSolicitud = 'rechazada'
 
 const fechaCorta = (fecha: string) =>
     new Date(fecha.slice(0, 10) + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -63,6 +64,7 @@ export default function PaginaAdmin() {
     const [procesando, setProcesando] = useState<string | null>(null)
     const [verProcesadas, setVerProcesadas] = useState(false)
     const [filtroPrioridad, setFiltroPrioridad] = useState<Prioridad | null>(null)
+    const [avisoOk, setAvisoOk] = useState<string | null>(null)
 
     useEffect(() => {
         let cancelado = false
@@ -114,8 +116,28 @@ export default function PaginaAdmin() {
         return () => { cancelado = true }
     }, [recarga])
 
+    // Aprobar = invitar: la Edge Function «invitar» comprueba que eres admin,
+    // envía el email de invitación y marca la solicitud como aprobada
+    async function aprobar(s: Solicitud) {
+        setProcesando(s.id)
+        setError(null)
+        setAvisoOk(null)
+        const { error } = await supabase.functions.invoke('invitar', {
+            body: { solicitud_id: s.id, volver_a: window.location.origin },
+        })
+        setProcesando(null)
+        if (error) {
+            // El mensaje concreto viene en la respuesta de la función
+            const detalle = await (error as { context?: Response }).context?.json?.().catch(() => null)
+            setError(detalle?.error ?? 'No se pudo enviar la invitación. Inténtalo otra vez.')
+            return
+        }
+        setAvisoOk(`Invitación enviada a ${s.email} ✓`)
+        setRecarga((n) => n + 1)
+    }
+
     async function cambiarEstado(s: Solicitud, estado: EstadoSolicitud) {
-        if (estado === 'rechazada' && !confirm(`¿Rechazar la solicitud de ${s.email}?`)) return
+        if (!confirm(`¿Rechazar la solicitud de ${s.email}?`)) return
         setProcesando(s.id)
         // select() para detectar si RLS ha bloqueado el update (0 filas sin error)
         const { data, error } = await supabase
@@ -212,7 +234,10 @@ export default function PaginaAdmin() {
             </nav>
 
             {error && (
-                <p className="text-sm text-negativo bg-negativo/10 rounded-lg px-3 py-2 mb-4">{error}</p>
+                <p role="alert" className="text-sm text-negativo bg-negativo/10 rounded-lg px-3 py-2 mb-4">{error}</p>
+            )}
+            {avisoOk && (
+                <p role="status" className="text-sm text-positivo bg-positivo/10 rounded-lg px-3 py-2 mb-4">{avisoOk}</p>
             )}
 
             {!cargado ? (
@@ -239,11 +264,12 @@ export default function PaginaAdmin() {
                                                     </div>
                                                     <div className="flex gap-2 shrink-0">
                                                         <button
-                                                            onClick={() => cambiarEstado(s, 'aprobada')}
+                                                            onClick={() => aprobar(s)}
                                                             disabled={procesando === s.id}
+                                                            aria-label={`Aprobar e invitar a ${s.email}`}
                                                             className="px-3 py-1.5 rounded-lg bg-positivo text-sobre-acento text-sm font-semibold disabled:opacity-60"
                                                         >
-                                                            Aprobar
+                                                            {procesando === s.id ? 'Enviando...' : 'Aprobar'}
                                                         </button>
                                                         <button
                                                             onClick={() => cambiarEstado(s, 'rechazada')}

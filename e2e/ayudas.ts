@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process'
 import { createClient } from '@supabase/supabase-js'
 import type { Page } from '@playwright/test'
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from './entorno'
+import { SUPABASE_URL } from './entorno'
 
 export const CONTRASENA = 'test-e2e-1234'
 
@@ -10,11 +10,11 @@ export function emailUnico(prefijo = 'e2e'): string {
     return `${prefijo}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.local`
 }
 
-// Crea una usuaria nueva en Supabase local (allí no hace falta confirmar el email)
+// Crea una usuaria nueva en Supabase local. El registro libre está cerrado (como en
+// producción), así que se crea como lo haría la admin: con la clave secreta local.
 export async function crearUsuaria(): Promise<string> {
     const email = emailUnico()
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } })
-    const { error } = await supabase.auth.signUp({ email, password: CONTRASENA })
+    const { error } = await clienteAdmin().auth.admin.createUser({ email, password: CONTRASENA, email_confirm: true })
     if (error) throw new Error(`No se pudo crear la usuaria de prueba: ${error.message}. ¿Está Supabase local en marcha?`)
     return email
 }
@@ -54,10 +54,15 @@ function claveSecretaLocal(): string {
     return clave
 }
 
+// Cliente con la clave secreta del Supabase LOCAL (solo para preparar datos de prueba)
+export function clienteAdmin() {
+    return createClient(SUPABASE_URL, claveSecretaLocal(), { auth: { persistSession: false } })
+}
+
 // Convierte una usuaria de prueba en admin. Desde la app no se puede (lo impide
 // un trigger), así que se hace con la clave secreta, como desde el panel de Supabase.
 export async function hacerAdmin(email: string, nombre: string) {
-    const admin = createClient(SUPABASE_URL, claveSecretaLocal(), { auth: { persistSession: false } })
+    const admin = clienteAdmin()
     const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 })
     if (error) throw new Error(`No se pudo leer las usuarias: ${error.message}`)
     const usuaria = data.users.find((u) => u.email === email)
