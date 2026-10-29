@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Navigate, Routes, Route } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabaseClient'
@@ -9,7 +9,8 @@ import PaginaPerfil from './pages/PaginaPerfil'
 import PaginaHistorial from './pages/PaginaHistorial'
 import PaginaSemana from './pages/PaginaSemana'
 import PaginaIdeas from './pages/PaginaIdeas'
-import PaginaAdmin from './pages/PaginaAdmin'
+// La zona de admin se descarga solo cuando la admin entra en ella
+const PaginaAdmin = lazy(() => import('./pages/PaginaAdmin'))
 import Estructura from './components/Estructura'
 import { useTema } from './lib/tema'
 import { useFichajeHoy } from './lib/fichajeHoy'
@@ -151,8 +152,12 @@ function App() {
         />
         <Route path="/ideas" element={<PaginaIdeas session={session} />} />
         <Route
-          path="/admin"
-          element={!perfilCargado ? null : esAdmin ? <PaginaAdmin /> : <Navigate to="/" replace />}
+          path="/admin/*"
+          element={!perfilCargado ? null : esAdmin ? (
+            <Suspense fallback={<p className="max-w-3xl mx-auto px-4 py-6 md:px-8 text-sm text-tinta-suave">Cargando...</p>}>
+              <PaginaAdmin />
+            </Suspense>
+          ) : <Navigate to="/" replace />}
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

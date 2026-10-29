@@ -30,8 +30,8 @@ test('una idea enviada desde Ideas le llega a la admin en su panel', async ({ pa
     await completarBienvenida(admin, 'Admin')
     await expect(admin.getByText('Hola, Admin')).toBeVisible()
 
-    await admin.goto('/admin')
-    await expect(admin.getByText('Ideas recibidas')).toBeVisible()
+    await admin.goto('/admin/ideas')
+    await expect(admin.getByText(/Ideas recibidas/)).toBeVisible()
     await expect(admin.getByText(textoIdea)).toBeVisible()
     await contextoAdmin.close()
 })
