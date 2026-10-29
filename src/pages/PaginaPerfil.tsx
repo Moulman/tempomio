@@ -2,14 +2,24 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../supabaseClient'
+import type { Tema } from '../lib/tema'
+import type { HorarioDia } from '../lib/schedule'
+import HorarioBase from '../components/HorarioBase'
+import { IconoIdeas, IconoLuna, IconoSalir, IconoSol } from '../components/Iconos'
 
 interface Props {
     session: Session
     nombre: string | null
+    tema: Tema
+    onAlternarTema: () => void
+    horariosPorDia: (HorarioDia | null)[]
+    onHorariosActualizados: () => void
     onPerfilActualizado: () => void
 }
 
-export default function PaginaPerfil({ session, nombre, onPerfilActualizado }: Props) {
+export default function PaginaPerfil({
+    session, nombre, tema, onAlternarTema, horariosPorDia, onHorariosActualizados, onPerfilActualizado,
+}: Props) {
     const [valor, setValor] = useState(nombre || '')
     const [guardando, setGuardando] = useState(false)
     const [guardado, setGuardado] = useState(false)
@@ -28,31 +38,79 @@ export default function PaginaPerfil({ session, nombre, onPerfilActualizado }: P
     }
 
     return (
-        <div className="max-w-md mx-auto px-4 py-6">
+        <div className="max-w-3xl mx-auto px-4 py-6 md:px-8 md:py-10">
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-semibold">Perfil</h1>
-                <Link to="/" className="text-sm text-sky-400 hover:text-sky-300">← Volver</Link>
             </div>
 
-            <div className="bg-slate-800 rounded-2xl p-5">
-                <label className="block text-sm text-slate-400 mb-2">Nombre</label>
+            <div className="bg-superficie border border-linea rounded-xl p-5">
+                <label className="block text-sm text-tinta-suave mb-2">Nombre</label>
                 <input
                     type="text"
                     value={valor}
                     onChange={(e) => setValor(e.target.value)}
                     placeholder="Tu nombre"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 mb-2"
+                    className="w-full bg-fondo border border-linea rounded-lg px-3 py-2 text-tinta mb-2"
                 />
-                <p className="text-xs text-slate-500 mb-4">Email: {session.user.email}</p>
+                <p className="text-xs text-tinta-tenue mb-4">Email: {session.user.email}</p>
                 <button
                     onClick={guardar}
                     disabled={guardando}
-                    className="w-full py-2.5 rounded-xl bg-sky-400 text-slate-900 font-semibold"
+                    className="w-full py-2.5 rounded-xl bg-acento text-sobre-acento font-semibold"
                 >
                     {guardando ? 'Guardando...' : 'Guardar'}
                 </button>
-                {guardado && <p className="text-green-400 text-sm text-center mt-2">Guardado ✓</p>}
+                {guardado && <p className="text-positivo text-sm text-center mt-2">Guardado ✓</p>}
             </div>
+
+            <div className="mt-4">
+                <HorarioBase userId={session.user.id} horariosPorDia={horariosPorDia} onActualizado={onHorariosActualizados} />
+            </div>
+
+            {/* ---------- Apariencia ---------- */}
+            <div className="bg-superficie border border-linea rounded-xl p-5 mt-4">
+                <div className="flex items-center justify-between gap-4">
+                    <div>
+                        <p className="font-medium">Tema oscuro</p>
+                        <p className="text-sm text-tinta-suave">Se guarda en este dispositivo</p>
+                    </div>
+                    <button
+                        role="switch"
+                        aria-checked={tema === 'oscuro'}
+                        aria-label="Tema oscuro"
+                        onClick={onAlternarTema}
+                        className={`relative shrink-0 w-14 h-8 rounded-full transition-colors ${tema === 'oscuro' ? 'bg-acento' : 'bg-realce'}`}
+                    >
+                        <span
+                            className={`absolute top-1 left-1 grid place-items-center w-6 h-6 rounded-full bg-superficie text-tinta-suave shadow-sm transition-transform ${tema === 'oscuro' ? 'translate-x-6' : ''}`}
+                        >
+                            {tema === 'oscuro' ? <IconoLuna width={14} height={14} /> : <IconoSol width={14} height={14} />}
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            {/* En móvil Ideas no cabe en la barra inferior: se llega desde aquí */}
+            <Link
+                to="/ideas"
+                className="md:hidden mt-4 flex items-center gap-3 bg-superficie border border-linea rounded-xl p-5"
+            >
+                <IconoIdeas className="text-acento" />
+                <span className="flex-1">
+                    <span className="block font-medium">Ideas y sugerencias</span>
+                    <span className="block text-sm text-tinta-suave">Cuéntanos qué mejorarías</span>
+                </span>
+                <span className="text-tinta-tenue">›</span>
+            </Link>
+
+            {/* En escritorio también está en la barra lateral */}
+            <button
+                onClick={() => supabase.auth.signOut()}
+                className="md:hidden w-full flex items-center justify-center gap-2 mt-4 py-3 rounded-xl border border-linea text-negativo"
+            >
+                <IconoSalir width={18} height={18} />
+                Cerrar sesión
+            </button>
         </div>
     )
 }

@@ -1,43 +1,38 @@
-import { Link } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
-import { supabase } from '../supabaseClient'
 import type { HorarioDia } from '../lib/schedule'
+import type { FichajeHoy } from '../lib/fichajeHoy'
 import Fichaje from '../components/Fichaje'
-import Resumen from '../components/Resumen'
-import HorarioBase from '../components/HorarioBase'
+import TarjetaBolsa from '../components/TarjetaBolsa'
+import type { Bolsa, ResumenBolsa } from '../lib/bolsa'
+import Racha from '../components/Racha'
 
 interface Props {
     session: Session
     nombre: string | null
     horariosPorDia: (HorarioDia | null)[]
-    onHorariosActualizados: () => void
+    fichajeHoy: FichajeHoy
+    bolsa: Bolsa
+    resumenBolsa: ResumenBolsa
 }
 
-export default function PaginaPrincipal({ session, nombre, horariosPorDia, onHorariosActualizados }: Props) {
+export default function PaginaPrincipal({ session, nombre, horariosPorDia, fichajeHoy, bolsa, resumenBolsa }: Props) {
     return (
-        <div className="max-w-md mx-auto px-4 py-6">
-            <div className="flex justify-between items-center mb-4">
+        <div className="max-w-md mx-auto px-4 py-6 md:py-10">
+            <div className="mb-5">
                 <h1 className="text-2xl font-semibold">
                     {nombre ? `Hola, ${nombre} 👋` : 'TempoMio'}
                 </h1>
-                <div className="flex items-center gap-3">
-                    <Link to="/perfil" className="text-sm text-sky-400 hover:text-sky-300">
-                        Perfil
-                    </Link>
-                    <Link to="/historial" className="text-sm text-sky-400 hover:text-sky-300">
-                        Historial
-                    </Link>
-                    <button
-                        onClick={() => supabase.auth.signOut()}
-                        className="text-sm text-slate-400 hover:text-slate-200"
-                    >
-                        Salir
-                    </button>
-                </div>
+                {/* La versión sube con cada fichaje guardado: la racha se recalcula */}
+                <Racha userId={session.user.id} recarga={fichajeHoy.version} />
             </div>
-            <Fichaje userId={session.user.id} horariosPorDia={horariosPorDia} />
-            <Resumen horariosPorDia={horariosPorDia} />
-            <HorarioBase userId={session.user.id} horariosPorDia={horariosPorDia} onActualizado={onHorariosActualizados} />
+            <div className="space-y-4">
+                <Fichaje
+                    fichajeHoy={fichajeHoy}
+                    horariosPorDia={horariosPorDia}
+                    saldoBolsa={bolsa.cargado && !bolsa.error ? resumenBolsa.disponible : null}
+                />
+                <TarjetaBolsa bolsa={bolsa} resumen={resumenBolsa} horariosPorDia={horariosPorDia} />
+            </div>
         </div>
     )
 }

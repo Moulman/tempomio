@@ -5,6 +5,8 @@ export interface Fichaje {
     hora_entrada: string | null
     hora_salida: string | null
     nota?: string | null
+    // Minutos de la bolsa de horas usados ese día (salir antes o día libre)
+    bolsa_minutos?: number | null
 }
 
 export interface HorarioDia {
@@ -13,17 +15,54 @@ export interface HorarioDia {
     activo: boolean
 }
 
-export interface ResumenSemana {
-    semanaInicio: string
-    extraMinutos: number
+// ---------- Fechas (hora local, nunca UTC) ----------
+
+// Date → "YYYY-MM-DD" usando la zona horaria local
+export function fechaLocal(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-export interface ResumenMes {
-    mes: string
-    extraMinutos: number
+// Lunes (YYYY-MM-DD) de la semana de una fecha
+export function lunesDeSemana(d: Date): string {
+    const lunes = new Date(d)
+    lunes.setDate(d.getDate() - (d.getDay() + 6) % 7)
+    return fechaLocal(lunes)
 }
 
-type HorariosPorDia = (HorarioDia | null)[]
+// "YYYY-MM-DD" + n días (n puede ser negativo)
+export function sumarDias(fecha: string, n: number): string {
+    const d = new Date(fecha + 'T00:00:00')
+    d.setDate(d.getDate() + n)
+    return fechaLocal(d)
+}
+
+// Las 7 fechas de lunes a domingo de la semana que empieza en `lunes`
+export function diasDeSemana(lunes: string): string[] {
+    return Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i))
+}
+
+// "Martes, 20 de octubre": solo la primera letra en mayúscula
+export function fechaLarga(d: Date): string {
+    const texto = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+    return texto.charAt(0).toUpperCase() + texto.slice(1)
+}
+
+// ---------- Racha ----------
+
+// Días consecutivos con fichaje contando hacia atrás desde hoy.
+// Si hoy aún no hay fichaje, la racha de ayer se mantiene hasta que acabe el día.
+export function calcularRacha(fechasConFichaje: Iterable<string>, hoy: Date = new Date()): number {
+    const fechas = new Set(fechasConFichaje)
+    const cursor = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+    if (!fechas.has(fechaLocal(cursor))) cursor.setDate(cursor.getDate() - 1)
+
+    let racha = 0
+    while (fechas.has(fechaLocal(cursor))) {
+        racha++
+        cursor.setDate(cursor.getDate() - 1)
+    }
+    return racha
+}
 
 // ---------- Cálculo ----------
 
@@ -40,71 +79,51 @@ export function minutosTrabajados(entrada: string | null, salida: string | null)
     return s >= e ? s - e : (24 * 60 - e) + s
 }
 
+// Extra de un día completo frente al horario. Las horas de bolsa usadas cuentan
+// como trabajadas: salir 2h antes usando 2h de bolsa deja el día en 0.
+// Un día sin entrada o sin salida no cuenta (0), aunque tenga bolsa apuntada.
 export function extraDelDia(fichaje: Fichaje, horario: HorarioDia | null): number {
     if (!fichaje.hora_entrada || !fichaje.hora_salida) return 0
-    const real = minutosTrabajados(fichaje.hora_entrada, fichaje.hora_salida)
+    const real = minutosTrabajados(fichaje.hora_entrada, fichaje.hora_salida) + (fichaje.bolsa_minutos ?? 0)
     const teorico = horario && horario.activo
         ? minutosTrabajados(horario.hora_entrada, horario.hora_salida)
         : 0
     return real - teorico
 }
 
-export function formatMinutos(mins: number): string {
-    const signo = mins < 0 ? '-' : '+'
+// Segundos desde una hora "HH:MM" o "HH:MM:SS" de hoy hasta `ahora` (nunca negativo)
+export function segundosDesde(hora: string, ahora: Date): number {
+    const [h, m, s = 0] = hora.split(':').map(Number)
+    const inicio = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), h, m, s)
+    return Math.max(0, Math.floor((ahora.getTime() - inicio.getTime()) / 1000))
+}
+
+// 3725 → "01:02:05"
+export function formatReloj(segundos: number): string {
+    const h = Math.floor(segundos / 3600)
+    const m = Math.floor((segundos % 3600) / 60)
+    const s = segundos % 60
+    return [h, m, s].map((n) => String(n).padStart(2, '0')).join(':')
+}
+
+// Duración sin signo: 450 → "7h 30min"
+export function formatDuracion(mins: number): string {
     const abs = Math.abs(mins)
     const h = Math.floor(abs / 60)
     const m = abs % 60
-    if (h === 0) return `${signo}${m}min`
-    if (m === 0) return `${signo}${h}h`
-    return `${signo}${h}h ${m}min`
+    if (h === 0) return `${m}min`
+    if (m === 0) return `${h}h`
+    return `${h}h ${m}min`
 }
 
-// ---------- Agrupación ----------
-
-export function agruparPorSemana(
-    fichajes: Fichaje[],
-    horariosPorDia: HorariosPorDia
-): ResumenSemana[] {
-    const grupos: Record<string, number> = {}
-
-    for (const f of fichajes) {
-        const fecha = new Date(f.fecha + 'T00:00:00')
-        const diaSemana = (fecha.getDay() + 6) % 7
-        const lunes = new Date(fecha)
-        lunes.setDate(fecha.getDate() - diaSemana)
-        const clave = lunes.toISOString().slice(0, 10)
-
-        const horario = horariosPorDia[fecha.getDay()]
-        const extra = extraDelDia(f, horario)
-
-        grupos[clave] = (grupos[clave] || 0) + extra
-    }
-
-    return Object.entries(grupos)
-        .map(([semanaInicio, extraMinutos]) => ({ semanaInicio, extraMinutos }))
-        .sort((a, b) => b.semanaInicio.localeCompare(a.semanaInicio))
+// Diferencia con signo: 15 → "+15min", -90 → "-1h 30min", 0 → "0min"
+export function formatMinutos(mins: number): string {
+    if (mins === 0) return '0min'
+    return `${mins < 0 ? '-' : '+'}${formatDuracion(mins)}`
 }
 
-export function agruparPorMes(
-    fichajes: Fichaje[],
-    horariosPorDia: HorariosPorDia
-): ResumenMes[] {
-    const grupos: Record<string, number> = {}
+// ---------- Calendario ----------
 
-    for (const f of fichajes) {
-        const fecha = new Date(f.fecha + 'T00:00:00')
-        const clave = f.fecha.slice(0, 7)
-
-        const horario = horariosPorDia[fecha.getDay()]
-        const extra = extraDelDia(f, horario)
-
-        grupos[clave] = (grupos[clave] || 0) + extra
-    }
-
-    return Object.entries(grupos)
-        .map(([mes, extraMinutos]) => ({ mes, extraMinutos }))
-        .sort((a, b) => b.mes.localeCompare(a.mes))
-}
 // Genera las celdas de un calendario mensual (incluye huecos al principio
 // para alinear con el día de la semana). Devuelve un array donde cada celda
 // es una fecha "YYYY-MM-DD" o null (hueco).

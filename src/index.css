@@ -1,5 +1,62 @@
 @import "tailwindcss";
 
+/* Colores por significado. Los valores cambian con data-tema en <html>
+   (lo pone el script de index.html y lib/tema.ts). */
+@theme inline {
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+
+  --color-fondo: var(--fondo);
+  --color-superficie: var(--superficie);
+  --color-realce: var(--realce);
+  --color-linea: var(--linea);
+  --color-tinta: var(--tinta);
+  --color-tinta-suave: var(--tinta-suave);
+  --color-tinta-tenue: var(--tinta-tenue);
+  --color-acento: var(--acento);
+  --color-sobre-acento: var(--sobre-acento);
+  --color-positivo: var(--positivo);
+  --color-negativo: var(--negativo);
+  --color-aviso: var(--aviso);
+}
+
+/* ---------- Tema claro (por defecto) ---------- */
+:root {
+  color-scheme: light;
+  --fondo: #f5f3ef;
+  --superficie: #ffffff;
+  --realce: #ebe8e1;
+  --linea: #e2ded6;
+  --tinta: #1d2430;
+  --tinta-suave: #5d6573;
+  --tinta-tenue: #8a909b;
+  --acento: #0e7a73;
+  --sobre-acento: #ffffff;
+  --positivo: #16794a;
+  --negativo: #c03a2b;
+  --aviso: #b2610b;
+}
+
+/* ---------- Tema oscuro ---------- */
+:root[data-tema="oscuro"] {
+  color-scheme: dark;
+  --fondo: #13171d;
+  --superficie: #1c2129;
+  --realce: #2a313b;
+  --linea: #2c333d;
+  --tinta: #eef1f5;
+  --tinta-suave: #a3abb8;
+  --tinta-tenue: #77808d;
+  --acento: #4fcabd;
+  --sobre-acento: #0d1a19;
+  --positivo: #4ccf8a;
+  --negativo: #f07b6c;
+  --aviso: #f0b45a;
+}
+
 body {
   margin: 0;
+  background: var(--fondo);
+  color: var(--tinta);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }

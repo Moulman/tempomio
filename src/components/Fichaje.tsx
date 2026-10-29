@@ -1,168 +1,219 @@
-import { useEffect, useState } from 'react'
-import { supabase } from '../supabaseClient'
-import { extraDelDia, formatMinutos } from '../lib/schedule'
-import type { Fichaje as FichajeType, HorarioDia } from '../lib/schedule'
+import { useState } from 'react'
+import {
+    extraDelDia, fechaLarga, formatDuracion, formatMinutos, formatReloj, minutosTrabajados, segundosDesde,
+} from '../lib/schedule'
+import type { HorarioDia } from '../lib/schedule'
+import { useAhora } from '../lib/fichajeHoy'
+import type { FichajeHoy } from '../lib/fichajeHoy'
 
 interface Props {
-    userId: string
+    fichajeHoy: FichajeHoy
     horariosPorDia: (HorarioDia | null)[]
+    // Saldo de la bolsa de horas (null si no está disponible: no se ofrece usarla)
+    saldoBolsa: number | null
 }
 
-function horaActual(): string {
-    return new Date().toTimeString().slice(0, 5) // "HH:MM"
-}
+const hhmm = (hora: string | null | undefined) => hora?.slice(0, 5) || '—'
 
-function fechaHoy(): string {
-    return new Date().toISOString().slice(0, 10) // "YYYY-MM-DD"
-}
-
-export default function Fichaje({ userId, horariosPorDia }: Props) {
-    const [fichaje, setFichaje] = useState<FichajeType | null>(null)
-    const [cargando, setCargando] = useState(true)
+// Cronómetro del día: entrada y salida con un toque, tiempo en vivo y extra frente al horario base
+export default function Fichaje({ fichajeHoy, horariosPorDia, saldoBolsa }: Props) {
+    const { fichaje, cargando, enCurso, marcarEntrada, marcarSalida, guardarHoras, guardarNota } = fichajeHoy
+    const ahora = useAhora(enCurso)
+    const [ocupado, setOcupado] = useState(false)
+    const [error, setError] = useState<string | null>(null)
     const [editando, setEditando] = useState(false)
     const [entradaManual, setEntradaManual] = useState('')
     const [salidaManual, setSalidaManual] = useState('')
     const [editandoNota, setEditandoNota] = useState(false)
     const [notaManual, setNotaManual] = useState('')
+    // Minutos que faltan para tu hora al pulsar "Marcar salida": se ofrece cubrirlos con la bolsa
+    const [faltaAlSalir, setFaltaAlSalir] = useState<number | null>(null)
 
-    useEffect(() => {
-        cargarFichajeHoy()
-    }, [])
-
-    async function cargarFichajeHoy() {
-        setCargando(true)
-        const { data } = await supabase
-            .from('fichajes')
-            .select('*')
-            .eq('fecha', fechaHoy())
-            .maybeSingle()
-        setFichaje(data)
-        setCargando(false)
-    }
-
-    async function marcarEntrada() {
-        const { data, error } = await supabase
-            .from('fichajes')
-            .upsert(
-                { user_id: userId, fecha: fechaHoy(), hora_entrada: horaActual() },
-                { onConflict: 'user_id,fecha' }
-            )
-            .select()
-            .single()
-        if (!error) setFichaje(data)
-    }
-
-    async function marcarSalida() {
-        const { data, error } = await supabase
-            .from('fichajes')
-            .update({ hora_salida: horaActual() })
-            .eq('fecha', fechaHoy())
-            .select()
-            .single()
-        if (!error) setFichaje(data)
+    // Ejecuta una escritura evitando dobles toques; devuelve si fue bien
+    async function guardar(accion: () => Promise<boolean>): Promise<boolean> {
+        setOcupado(true)
+        setError(null)
+        const ok = await accion()
+        setOcupado(false)
+        if (!ok) setError('No se pudo guardar. Revisa la conexión e inténtalo otra vez.')
+        return ok
     }
 
     function abrirEdicion() {
         setEntradaManual(fichaje?.hora_entrada?.slice(0, 5) || '')
         setSalidaManual(fichaje?.hora_salida?.slice(0, 5) || '')
+        setEditandoNota(false)
         setEditando(true)
     }
 
     async function guardarEdicion() {
-        const { data, error } = await supabase
-            .from('fichajes')
-            .upsert(
-                {
-                    user_id: userId,
-                    fecha: fechaHoy(),
-                    hora_entrada: entradaManual || null,
-                    hora_salida: salidaManual || null,
-                },
-                { onConflict: 'user_id,fecha' }
-            )
-            .select()
-            .single()
-        if (!error) {
-            setFichaje(data)
-            setEditando(false)
-        }
+        if (await guardar(() => guardarHoras(entradaManual || null, salidaManual || null))) setEditando(false)
     }
 
     function abrirNota() {
         setNotaManual(fichaje?.nota || '')
+        setEditando(false)
         setEditandoNota(true)
     }
 
-    async function guardarNota() {
-        const { data, error } = await supabase
-            .from('fichajes')
-            .update({ nota: notaManual || null })
-            .eq('fecha', fechaHoy())
-            .select()
-            .single()
-        if (!error) {
-            setFichaje(data)
-            setEditandoNota(false)
-        }
+    async function guardarEdicionNota() {
+        if (await guardar(() => guardarNota(notaManual || null))) setEditandoNota(false)
     }
 
-    if (cargando) return <p>Cargando...</p>
+    // Si sales antes de completar tu horario, primero se pregunta si usar la bolsa
+    function pulsarSalida() {
+        const h = horariosPorDia[new Date().getDay()]
+        const previsto = h?.activo ? minutosTrabajados(h.hora_entrada, h.hora_salida) : 0
+        if (saldoBolsa !== null && previsto > 0 && fichaje?.hora_entrada) {
+            const trabajado = Math.floor(segundosDesde(fichaje.hora_entrada, new Date()) / 60)
+            const falta = previsto - trabajado - (fichaje.bolsa_minutos ?? 0)
+            if (falta > 0) {
+                setFaltaAlSalir(falta)
+                return
+            }
+        }
+        guardar(() => marcarSalida())
+    }
+
+    async function salirConBolsa(usar: boolean) {
+        const falta = faltaAlSalir ?? 0
+        const ok = await guardar(() => marcarSalida(usar ? (fichaje?.bolsa_minutos ?? 0) + falta : undefined))
+        if (ok) setFaltaAlSalir(null)
+    }
+
+    if (cargando) {
+        return <div className="bg-superficie border border-linea rounded-2xl h-72 animate-pulse" />
+    }
 
     const hoy = new Date()
-    const horarioHoy = horariosPorDia[hoy.getDay()]
-    const extra = fichaje ? extraDelDia(fichaje, horarioHoy) : 0
+    const horario = horariosPorDia[hoy.getDay()]
+    const teorico = horario?.activo ? minutosTrabajados(horario.hora_entrada, horario.hora_salida) : 0
+    const terminado = !!fichaje?.hora_entrada && !!fichaje?.hora_salida
+
+    // Tiempo trabajado: en vivo mientras corre, cerrado al marcar salida
+    const segundos = enCurso && fichaje?.hora_entrada
+        ? segundosDesde(fichaje.hora_entrada, ahora)
+        : terminado ? minutosTrabajados(fichaje!.hora_entrada, fichaje!.hora_salida) * 60 : 0
+    const minutos = Math.floor(segundos / 60)
+    const extra = terminado ? extraDelDia(fichaje!, horario) : minutos - teorico
+    const progreso = teorico > 0 ? Math.min(100, (minutos / teorico) * 100) : 0
+
+    const estado = enCurso ? 'En turno' : terminado ? 'Jornada terminada' : 'Sin fichar'
 
     return (
-        <div className="bg-slate-800 rounded-2xl p-5 mt-4">
-            <h2 className="text-base font-medium capitalize mb-4">
-                {hoy.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </h2>
-
-            <div className="flex justify-around my-4">
-                <div className="text-center">
-                    <div className="text-xs text-slate-400">Entrada</div>
-                    <div className="text-3xl font-semibold">{fichaje?.hora_entrada?.slice(0, 5) || '—'}</div>
-                </div>
-                <div className="text-center">
-                    <div className="text-xs text-slate-400">Salida</div>
-                    <div className="text-3xl font-semibold">{fichaje?.hora_salida?.slice(0, 5) || '—'}</div>
-                </div>
+        <section className="bg-superficie border border-linea rounded-2xl p-5 md:p-6">
+            <div className="flex items-center justify-between gap-3">
+                <h2 className="text-base font-medium">
+                    {fechaLarga(hoy)}
+                </h2>
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${enCurso
+                    ? 'bg-acento/10 text-acento'
+                    : 'bg-realce text-tinta-suave'}`}
+                >
+                    {enCurso && <span className="w-1.5 h-1.5 rounded-full bg-acento animate-pulse" />}
+                    {estado}
+                </span>
             </div>
 
+            {/* ---------- Reloj ---------- */}
+            <p className={`mt-6 text-center text-6xl font-semibold tabular-nums tracking-tight ${segundos === 0 ? 'text-tinta-tenue' : ''}`}>
+                {formatReloj(segundos)}
+            </p>
+            <p className="mt-2 text-center text-sm text-tinta-suave tabular-nums">
+                Entrada {hhmm(fichaje?.hora_entrada)} · Salida {hhmm(fichaje?.hora_salida)}
+            </p>
+
+            {/* ---------- Progreso frente al horario ---------- */}
+            <div className="mt-6">
+                {teorico > 0 ? (
+                    <>
+                        <div className="h-2 rounded-full bg-realce overflow-hidden">
+                            <div
+                                className={`h-full rounded-full transition-[width] duration-700 ${extra > 0 ? 'bg-positivo' : 'bg-acento'}`}
+                                style={{ width: `${progreso}%` }}
+                            />
+                        </div>
+                        <div className="mt-2 flex justify-between gap-3 text-sm">
+                            <span className="text-tinta-suave tabular-nums">
+                                Horario {hhmm(horario?.hora_entrada)}–{hhmm(horario?.hora_salida)}
+                            </span>
+                            {(enCurso || terminado) && (
+                                <span className={`font-medium tabular-nums ${extra > 0 ? 'text-positivo' : extra < 0 && terminado ? 'text-negativo' : 'text-tinta-suave'}`}>
+                                    {enCurso && extra < 0 ? `Quedan ${formatDuracion(extra)}` : `Extra ${formatMinutos(extra)}`}
+                                </span>
+                            )}
+                        </div>
+                    </>
+                ) : (
+                    <p className="text-sm text-tinta-suave text-center">
+                        Hoy no tienes horario: todo lo que fiches cuenta como extra.
+                    </p>
+                )}
+            </div>
+
+            {/* ---------- Botón principal ---------- */}
             {!editando && !fichaje?.hora_entrada && (
                 <button
-                    onClick={marcarEntrada}
-                    className="w-full py-3.5 rounded-xl bg-sky-400 text-slate-900 font-semibold"
+                    onClick={() => guardar(marcarEntrada)}
+                    disabled={ocupado}
+                    className="mt-6 w-full py-4 rounded-xl bg-acento text-sobre-acento text-lg font-semibold active:scale-[0.99] transition disabled:opacity-60"
                 >
                     Marcar entrada
                 </button>
             )}
-            {!editando && fichaje?.hora_entrada && !fichaje?.hora_salida && (
+            {!editando && enCurso && faltaAlSalir === null && (
                 <button
-                    onClick={marcarSalida}
-                    className="w-full py-3.5 rounded-xl bg-sky-400 text-slate-900 font-semibold"
+                    onClick={pulsarSalida}
+                    disabled={ocupado}
+                    className="mt-6 w-full py-4 rounded-xl bg-tinta text-superficie text-lg font-semibold active:scale-[0.99] transition disabled:opacity-60"
                 >
                     Marcar salida
                 </button>
             )}
-            {!editando && fichaje?.hora_entrada && fichaje?.hora_salida && (
-                <div className={`text-center py-2.5 rounded-xl font-semibold ${extra >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                    Extra de hoy: {formatMinutos(extra)}
+
+            {/* ---------- ¿Cubrir la salida anticipada con la bolsa? ---------- */}
+            {faltaAlSalir !== null && saldoBolsa !== null && (
+                <div className="mt-6 rounded-xl border border-acento/40 bg-acento/5 p-4">
+                    <p className="font-medium">Sales {formatDuracion(faltaAlSalir)} antes de tu hora</p>
+                    <p className="mt-1 text-sm text-tinta-suave">
+                        ¿Lo cubres con tu bolsa de horas? Tienes {formatMinutos(saldoBolsa)}
+                        {saldoBolsa < faltaAlSalir && ` y te quedarías en ${formatMinutos(saldoBolsa - faltaAlSalir)}`}.
+                    </p>
+                    <div className="mt-4 flex flex-col gap-2">
+                        <button
+                            onClick={() => salirConBolsa(true)}
+                            disabled={ocupado}
+                            className="w-full py-3 rounded-xl bg-acento text-sobre-acento font-semibold disabled:opacity-60"
+                        >
+                            Sí, usar {formatDuracion(faltaAlSalir)} de la bolsa
+                        </button>
+                        <button
+                            onClick={() => salirConBolsa(false)}
+                            disabled={ocupado}
+                            className="w-full py-3 rounded-xl border border-linea font-medium disabled:opacity-60"
+                        >
+                            No, salir sin usar la bolsa
+                        </button>
+                        <button onClick={() => setFaltaAlSalir(null)} className="py-2 text-sm text-tinta-suave">
+                            Cancelar
+                        </button>
+                    </div>
                 </div>
             )}
 
-            {!editando && fichaje?.hora_entrada && !editandoNota && (
-                <div className="mt-4">
-                    {fichaje?.nota && (
-                        <p className="text-sm text-slate-300 bg-slate-900 rounded-lg px-3 py-2 mb-2">{fichaje.nota}</p>
-                    )}
-                    <button
-                        onClick={abrirNota}
-                        className="w-full text-sm text-slate-400 hover:text-slate-200"
-                    >
-                        {fichaje?.nota ? 'Editar nota' : 'Añadir nota'}
-                    </button>
-                </div>
+            {error && (
+                <p className="mt-3 text-sm text-negativo bg-negativo/10 rounded-lg px-3 py-2">{error}</p>
+            )}
+
+            {!!fichaje?.bolsa_minutos && faltaAlSalir === null && (
+                <p className="mt-4 text-sm text-center text-tinta-suave">
+                    Bolsa de horas usada hoy: <span className="font-medium text-tinta">{formatDuracion(fichaje.bolsa_minutos)}</span>
+                </p>
+            )}
+
+            {/* ---------- Nota ---------- */}
+            {fichaje?.nota && !editandoNota && (
+                <p className="mt-4 text-sm bg-fondo rounded-lg px-3 py-2 whitespace-pre-line">{fichaje.nota}</p>
             )}
 
             {editandoNota && (
@@ -170,60 +221,68 @@ export default function Fichaje({ userId, horariosPorDia }: Props) {
                     <textarea
                         value={notaManual}
                         onChange={(e) => setNotaManual(e.target.value)}
-                        placeholder="¿Por qué te quedaste hasta tarde?"
+                        placeholder="¿Algo que recordar de hoy?"
                         rows={2}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100"
+                        autoFocus
+                        className="w-full bg-fondo border border-linea rounded-lg px-3 py-2 text-base"
                     />
                     <div className="flex gap-2.5">
-                        <button onClick={guardarNota} className="flex-1 py-2.5 rounded-xl bg-sky-400 text-slate-900 font-semibold">
+                        <button onClick={guardarEdicionNota} disabled={ocupado} className="flex-1 py-2.5 rounded-xl bg-acento text-sobre-acento font-semibold disabled:opacity-60">
                             Guardar
                         </button>
-                        <button onClick={() => setEditandoNota(false)} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-200">
+                        <button onClick={() => setEditandoNota(false)} className="flex-1 py-2.5 rounded-xl border border-linea">
                             Cancelar
                         </button>
                     </div>
                 </div>
             )}
 
-            {!editando ? (
-                <button
-                    onClick={abrirEdicion}
-                    className="w-full mt-3 text-sm text-slate-400 hover:text-slate-200"
-                >
-                    Corregir horas
-                </button>
-            ) : (
-                <div className="mt-4 space-y-3">
+            {/* ---------- Corregir horas (modo manual) ---------- */}
+            {editando && (
+                <div className="mt-6 space-y-3">
                     <div className="flex gap-3">
-                        <label className="flex-1 text-xs text-slate-400">
+                        <label className="flex-1 text-xs text-tinta-suave">
                             Entrada
                             <input
                                 type="time"
                                 value={entradaManual}
                                 onChange={(e) => setEntradaManual(e.target.value)}
-                                className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-base text-slate-100"
+                                className="w-full mt-1 bg-fondo border border-linea rounded-lg px-2 py-2 text-base text-tinta"
                             />
                         </label>
-                        <label className="flex-1 text-xs text-slate-400">
+                        <label className="flex-1 text-xs text-tinta-suave">
                             Salida
                             <input
                                 type="time"
                                 value={salidaManual}
                                 onChange={(e) => setSalidaManual(e.target.value)}
-                                className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-base text-slate-100"
+                                className="w-full mt-1 bg-fondo border border-linea rounded-lg px-2 py-2 text-base text-tinta"
                             />
                         </label>
                     </div>
                     <div className="flex gap-2.5">
-                        <button onClick={guardarEdicion} className="flex-1 py-2.5 rounded-xl bg-sky-400 text-slate-900 font-semibold">
+                        <button onClick={guardarEdicion} disabled={ocupado} className="flex-1 py-2.5 rounded-xl bg-acento text-sobre-acento font-semibold disabled:opacity-60">
                             Guardar
                         </button>
-                        <button onClick={() => setEditando(false)} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-200">
+                        <button onClick={() => setEditando(false)} className="flex-1 py-2.5 rounded-xl border border-linea">
                             Cancelar
                         </button>
                     </div>
                 </div>
             )}
-        </div>
+
+            {!editando && !editandoNota && (
+                <div className="mt-4 flex justify-center gap-6 text-sm">
+                    {fichaje?.hora_entrada && (
+                        <button onClick={abrirNota} className="text-tinta-suave hover:text-tinta">
+                            {fichaje.nota ? 'Editar nota' : 'Añadir nota'}
+                        </button>
+                    )}
+                    <button onClick={abrirEdicion} className="text-tinta-suave hover:text-tinta">
+                        Corregir horas
+                    </button>
+                </div>
+            )}
+        </section>
     )
 }
