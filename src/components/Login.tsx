@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { enlaceCaducado } from '../lib/enlaceEmail'
 import { Marca } from './Iconos'
 
 type Modo = 'login' | 'solicitud'
@@ -10,7 +11,11 @@ export default function Login() {
     // ---------- Inicio de sesión ----------
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
-    const [error, setError] = useState<string | null>(null)
+    // Un enlace de email ya usado o caducado vuelve aquí con el error en la dirección
+    const [error, setError] = useState<string | null>(() =>
+        enlaceCaducado(window.location.hash)
+            ? 'Ese enlace ya no sirve: ya se ha usado o ha caducado. Pide una invitación nueva.'
+            : null)
     const [cargando, setCargando] = useState(false)
 
     async function handleLogin(e: React.FormEvent) {

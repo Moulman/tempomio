@@ -299,10 +299,23 @@ export default function PaginaAdmin() {
                                         {verProcesadas && (
                                             <ul className="mt-2">
                                                 {procesadas.map((s) => (
-                                                    <li key={s.id} className="flex justify-between py-2 border-b border-linea last:border-0 text-sm">
+                                                    <li key={s.id} className="flex justify-between items-center gap-3 py-2 border-b border-linea last:border-0 text-sm">
                                                         <span className="truncate">{s.email}</span>
-                                                        <span className={s.estado === 'aprobada' ? 'text-positivo' : 'text-negativo'}>
-                                                            {s.estado}
+                                                        <span className="flex items-center gap-3 shrink-0">
+                                                            {/* Si aún no la ha aceptado (o el enlace caducó), se puede enviar otra */}
+                                                            {s.estado === 'aprobada' && (
+                                                                <button
+                                                                    onClick={() => aprobar(s)}
+                                                                    disabled={procesando === s.id}
+                                                                    aria-label={`Reenviar la invitación a ${s.email}`}
+                                                                    className="min-h-11 px-2 text-acento font-medium disabled:opacity-60"
+                                                                >
+                                                                    {procesando === s.id ? 'Enviando...' : 'Reenviar'}
+                                                                </button>
+                                                            )}
+                                                            <span className={s.estado === 'aprobada' ? 'text-positivo' : 'text-negativo'}>
+                                                                {s.estado}
+                                                            </span>
                                                         </span>
                                                     </li>
                                                 ))}
