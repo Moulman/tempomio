@@ -14,7 +14,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(24);
+select plan(25);
 
 -- ---------- Datos de prueba (como postgres, sin RLS) ----------
 insert into auth.users (id, email) values
@@ -50,6 +50,10 @@ insert into solicitudes_acceso (email) values ('existente@test.local');
 select policies_are('public', 'solicitudes_acceso',
   array['solicitudes_acceso_insert_public', 'solicitudes_acceso_select_admin', 'solicitudes_acceso_update_admin'],
   'La lista de espera solo tiene las policies esperadas');
+-- En producción nombre fue obligatorio y el formulario (que solo envía el
+-- email) fallaba (ver migración 20261029200000_solicitudes_nombre_opcional.sql)
+select col_is_null('public', 'solicitudes_acceso', 'nombre',
+  'En la lista de espera el nombre es opcional: basta con el email');
 
 -- ============================================================
 -- Como A (usuaria normal)
