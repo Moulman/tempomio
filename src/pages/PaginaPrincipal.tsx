@@ -5,6 +5,7 @@ import Fichaje from '../components/Fichaje'
 import TarjetaBolsa from '../components/TarjetaBolsa'
 import type { Bolsa, ResumenBolsa } from '../lib/bolsa'
 import Racha from '../components/Racha'
+import PedirIdea from '../components/PedirIdea'
 
 interface Props {
     session: Session
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default function PaginaPrincipal({ session, nombre, horariosPorDia, fichajeHoy, bolsa, resumenBolsa }: Props) {
+    const terminado = !!fichajeHoy.fichaje?.hora_entrada && !!fichajeHoy.fichaje?.hora_salida
     return (
         <div className="max-w-md mx-auto px-4 py-6 md:py-10">
             <div className="mb-5">
@@ -31,6 +33,7 @@ export default function PaginaPrincipal({ session, nombre, horariosPorDia, ficha
                     horariosPorDia={horariosPorDia}
                     saldoBolsa={bolsa.cargado && !bolsa.error ? resumenBolsa.disponible : null}
                 />
+                {terminado && <PedirIdea userId={session.user.id} horariosPorDia={horariosPorDia} />}
                 <TarjetaBolsa bolsa={bolsa} resumen={resumenBolsa} horariosPorDia={horariosPorDia} />
             </div>
         </div>

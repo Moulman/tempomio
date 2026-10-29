@@ -35,7 +35,7 @@ test.describe('barra inferior del móvil', () => {
 
         const barra = page.getByRole('navigation', { name: 'Navegación principal' })
         await barra.getByRole('link', { name: 'Perfil', exact: true }).click()
-        await page.getByRole('link', { name: /Ideas y sugerencias/ }).click()
+        await page.getByRole('link', { name: 'Contar una idea', exact: true }).click()
 
         await expect(page.getByRole('heading', { name: 'Ideas', exact: true })).toBeVisible()
         await expect(barra.getByRole('link', { name: 'Perfil', exact: true })).toHaveAttribute('aria-current', 'page')

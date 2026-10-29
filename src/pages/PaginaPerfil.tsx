@@ -44,6 +44,23 @@ export default function PaginaPerfil({
                 <h1 className="text-2xl font-semibold">Perfil</h1>
             </div>
 
+            {/* ---------- Ideas: arriba y a la vista ---------- */}
+            <div className="bg-superficie border border-linea rounded-xl p-5 mb-4">
+                <div className="flex items-center gap-3">
+                    <IconoIdeas className="text-acento" />
+                    <h2 className="font-semibold">Ideas para TempoMio</h2>
+                </div>
+                <p className="mt-2 text-sm text-tinta-suave">
+                    ¿Echas algo de menos o algo no va bien? Cuéntalo: leemos todas las ideas.
+                </p>
+                <Link
+                    to="/ideas"
+                    className="mt-4 block w-full py-2.5 rounded-xl bg-acento text-sobre-acento font-semibold text-center"
+                >
+                    Contar una idea
+                </Link>
+            </div>
+
             <div className="bg-superficie border border-linea rounded-xl p-5">
                 <label className="block text-sm text-tinta-suave mb-2">Nombre</label>
                 <input
@@ -91,20 +108,7 @@ export default function PaginaPerfil({
                 </div>
             </div>
 
-            {/* En móvil Ideas no cabe en la barra inferior: se llega desde aquí */}
-            <Link
-                to="/ideas"
-                className="md:hidden mt-4 flex items-center gap-3 bg-superficie border border-linea rounded-xl p-5"
-            >
-                <IconoIdeas className="text-acento" />
-                <span className="flex-1">
-                    <span className="block font-medium">Ideas y sugerencias</span>
-                    <span className="block text-sm text-tinta-suave">Cuéntanos qué mejorarías</span>
-                </span>
-                <span className="text-tinta-tenue">›</span>
-            </Link>
-
-            {/* Admin tampoco cabe en la barra inferior del móvil */}
+            {/* Admin no cabe en la barra inferior del móvil: se llega desde aquí */}
             {esAdmin && (
                 <Link
                     to="/admin"
