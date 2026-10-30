@@ -1,0 +1,18 @@
+<!-- Email de «¿Has olvidado tu contraseña?» de TempoMio.
+     Es la misma plantilla en local (config.toml) y en producción: si se cambia
+     aquí, hay que copiarla también en Supabase → Authentication → Emails →
+     Templates → Reset password.
+     El botón lleva a /aceptar de TempoMio: el código solo se gasta al pulsar
+     allí «Elegir contraseña nueva». {{ .RedirectTo }} es la dirección de la app. -->
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1d2430;">
+  <h1 style="font-size: 22px; margin: 0 0 12px;">Cambia tu contraseña de TempoMio</h1>
+  <p style="font-size: 15px; line-height: 1.5; margin: 0 0 20px;">
+    Has pedido cambiar tu contraseña. Pulsa el botón para elegir una nueva.
+  </p>
+  <p style="margin: 0 0 24px;">
+    <a href="{{ .RedirectTo }}/aceptar?token_hash={{ .TokenHash }}&type=recovery" style="display: inline-block; padding: 12px 20px; border-radius: 10px; background: #0e7a73; color: #ffffff; font-weight: 600; text-decoration: none;">Elegir contraseña nueva</a>
+  </p>
+  <p style="font-size: 13px; line-height: 1.5; color: #5d6573; margin: 0;">
+    Si no lo has pedido tú, ignora este email: tu contraseña no cambia.
+  </p>
+</div>

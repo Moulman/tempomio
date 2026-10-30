@@ -10,8 +10,12 @@ describe('leerEnlaceEmail', () => {
         expect(leerEnlaceEmail('?type=invite')).toBeNull()
     })
 
-    it('solo acepta invitaciones (otros tipos no los gestiona esta página)', () => {
-        expect(leerEnlaceEmail('?token_hash=abc123&type=recovery')).toBeNull()
+    it('lee también los enlaces de recuperar contraseña', () => {
+        expect(leerEnlaceEmail('?token_hash=abc123&type=recovery')).toEqual({ tokenHash: 'abc123', tipo: 'recovery' })
+    })
+
+    it('rechaza tipos que esta página no gestiona', () => {
+        expect(leerEnlaceEmail('?token_hash=abc123&type=signup')).toBeNull()
         expect(leerEnlaceEmail('?token_hash=abc123')).toBeNull()
     })
 })

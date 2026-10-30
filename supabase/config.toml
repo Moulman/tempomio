@@ -252,6 +252,11 @@ otp_expiry = 3600
 subject = "Te han invitado a TempoMio"
 content_path = "./supabase/templates/invitacion.html"
 
+# Email de «¿Has olvidado tu contraseña?» (igual en producción: Reset password)
+[auth.email.template.recovery]
+subject = "Cambia tu contraseña de TempoMio"
+content_path = "./supabase/templates/recuperar.html"
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true
