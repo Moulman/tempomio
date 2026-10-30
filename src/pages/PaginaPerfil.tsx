@@ -5,6 +5,7 @@ import { supabase } from '../supabaseClient'
 import type { Tema } from '../lib/tema'
 import type { HorarioDia } from '../lib/schedule'
 import HorarioBase from '../components/HorarioBase'
+import { LONGITUD_MINIMA, problemaContrasena } from '../lib/contrasena'
 import { IconoAdmin, IconoIdeas, IconoLuna, IconoSalir, IconoSol } from '../components/Iconos'
 
 interface Props {
@@ -85,6 +86,8 @@ export default function PaginaPerfil({
                 <HorarioBase userId={session.user.id} horariosPorDia={horariosPorDia} onActualizado={onHorariosActualizados} />
             </div>
 
+            <CambiarContrasena />
+
             {/* ---------- Apariencia ---------- */}
             <div className="bg-superficie border border-linea rounded-xl p-5 mt-4">
                 <div className="flex items-center justify-between gap-4">
@@ -125,12 +128,85 @@ export default function PaginaPerfil({
 
             {/* En escritorio también está en la barra lateral */}
             <button
-                onClick={() => supabase.auth.signOut()}
+                onClick={() => supabase.auth.signOut({ scope: 'local' })}
                 className="md:hidden w-full flex items-center justify-center gap-2 mt-4 py-3 rounded-xl border border-linea text-negativo"
             >
                 <IconoSalir width={18} height={18} />
                 Cerrar sesión
             </button>
+        </div>
+    )
+}
+
+// Cambiar la contraseña estando dentro (la sesión ya demuestra quién es)
+function CambiarContrasena() {
+    const [abierto, setAbierto] = useState(false)
+    const [contrasena, setContrasena] = useState('')
+    const [repetida, setRepetida] = useState('')
+    const [error, setError] = useState<string | null>(null)
+    const [guardando, setGuardando] = useState(false)
+    const [hecho, setHecho] = useState(false)
+
+    async function guardar(e: React.FormEvent) {
+        e.preventDefault()
+        const problema = problemaContrasena(contrasena, repetida)
+        if (problema) {
+            setError(problema)
+            return
+        }
+        setGuardando(true)
+        setError(null)
+        const { error } = await supabase.auth.updateUser({ password: contrasena })
+        setGuardando(false)
+        if (error) {
+            setError(error.code === 'same_password'
+                ? 'La contraseña nueva tiene que ser distinta de la actual.'
+                : 'No se pudo cambiar la contraseña. Inténtalo otra vez.')
+            return
+        }
+        setHecho(true)
+        setAbierto(false)
+        setContrasena('')
+        setRepetida('')
+    }
+
+    const campo = 'mt-1 w-full bg-fondo border border-linea rounded-lg px-3 py-2 text-tinta'
+
+    return (
+        <div className="bg-superficie border border-linea rounded-xl p-5 mt-4">
+            <div className="flex items-center justify-between gap-4">
+                <div>
+                    <p className="font-medium">Contraseña</p>
+                    {hecho && <p role="status" className="text-sm text-positivo">Contraseña cambiada ✓</p>}
+                </div>
+                {!abierto && (
+                    <button onClick={() => { setAbierto(true); setHecho(false) }} className="min-h-11 px-3 text-sm text-acento font-medium">
+                        Cambiar contraseña
+                    </button>
+                )}
+            </div>
+            {abierto && (
+                <form onSubmit={guardar} className="mt-3 space-y-3">
+                    <label className="block text-sm text-tinta-suave">
+                        Contraseña nueva
+                        <input type="password" value={contrasena} onChange={(e) => setContrasena(e.target.value)} required autoComplete="new-password" className={campo} />
+                    </label>
+                    <label className="block text-sm text-tinta-suave">
+                        Repite la contraseña nueva
+                        <input type="password" value={repetida} onChange={(e) => setRepetida(e.target.value)} required autoComplete="new-password" className={campo} />
+                    </label>
+                    <p className="text-xs text-tinta-suave">Al menos {LONGITUD_MINIMA} caracteres. Un PIN de {LONGITUD_MINIMA} cifras vale.</p>
+                    {error && <p role="alert" className="text-sm text-negativo bg-negativo/10 rounded-lg px-3 py-2">{error}</p>}
+                    <div className="flex gap-2.5">
+                        <button type="submit" disabled={guardando} className="flex-1 py-2.5 rounded-xl bg-acento text-sobre-acento font-semibold disabled:opacity-60">
+                            {guardando ? 'Guardando...' : 'Guardar contraseña'}
+                        </button>
+                        <button type="button" onClick={() => { setAbierto(false); setError(null) }} className="flex-1 py-2.5 rounded-xl border border-linea">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            )}
         </div>
     )
 }

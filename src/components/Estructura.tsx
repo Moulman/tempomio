@@ -138,7 +138,7 @@ export default function Estructura({ esAdmin, tema, onAlternarTema, fichajeHoy, 
                         {tema === 'claro' ? 'Tema oscuro' : 'Tema claro'}
                     </button>
                     <button
-                        onClick={() => supabase.auth.signOut()}
+                        onClick={() => supabase.auth.signOut({ scope: 'local' })}
                         className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[15px] text-tinta-suave hover:bg-realce hover:text-tinta"
                     >
                         <IconoSalir />

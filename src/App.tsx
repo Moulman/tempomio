@@ -76,8 +76,11 @@ function App() {
   if (window.location.pathname === '/aceptar') return <AceptarInvitacion />
   if (cargando) return null
   if (!session) return <Login />
-  // Entró por el enlace de una invitación: primero elige su contraseña
-  if (session.user.user_metadata?.contrasena_pendiente === true) return <ElegirContrasena session={session} />
+  // Entró por una invitación, o por «¿Has olvidado tu contraseña?»: primero elige su contraseña
+  const metadatos = session.user.user_metadata
+  if (metadatos?.contrasena_pendiente === true || metadatos?.cambiando_contrasena === true) {
+    return <ElegirContrasena session={session} />
+  }
 
   const resumenBolsa = calcularBolsa(bolsa.fichajes, bolsa.ajustes, horariosPorDia, fechaLocal(new Date()))
 
