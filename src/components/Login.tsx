@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { enlaceCaducado } from '../lib/enlaceEmail'
+import { resultadoPedirEnlace } from '../lib/contrasena'
 import { Marca } from './Iconos'
 
-type Modo = 'login' | 'solicitud'
+type Modo = 'login' | 'solicitud' | 'olvido'
 
 export default function Login() {
     const [modo, setModo] = useState<Modo>('login')
@@ -27,6 +28,24 @@ export default function Login() {
 
         if (error) setError('Email o contraseña incorrectos.')
         setCargando(false)
+    }
+
+    // ---------- ¿Has olvidado tu contraseña? ----------
+    const [emailOlvido, setEmailOlvido] = useState('')
+    const [enviandoOlvido, setEnviandoOlvido] = useState(false)
+    const [olvidoEnviado, setOlvidoEnviado] = useState(false)
+    const [errorOlvido, setErrorOlvido] = useState<string | null>(null)
+
+    async function handleOlvido(e: React.FormEvent) {
+        e.preventDefault()
+        setEnviandoOlvido(true)
+        setErrorOlvido(null)
+        // El email lleva a /aceptar?type=recovery (plantilla «Reset password»)
+        const { error } = await supabase.auth.resetPasswordForEmail(emailOlvido, { redirectTo: window.location.origin })
+        setEnviandoOlvido(false)
+        // El mensaje nunca revela si el email tiene cuenta (ver resultadoPedirEnlace)
+        if (resultadoPedirEnlace(error) === 'error') setErrorOlvido('No se pudo enviar ahora. Inténtalo de nuevo en unos minutos.')
+        else setOlvidoEnviado(true)
     }
 
     // ---------- Solicitud de acceso ----------
@@ -66,6 +85,8 @@ export default function Login() {
         setError(null)
         setErrorSolicitud(null)
         setSolicitudEnviada(false)
+        setOlvidoEnviado(false)
+        setErrorOlvido(null)
     }
 
     return (
@@ -99,7 +120,48 @@ export default function Login() {
                         </button>
                     </div>
 
-                    {modo === 'login' ? (
+                    {modo === 'olvido' ? (
+                        olvidoEnviado ? (
+                            <div className="space-y-3 text-center">
+                                <p role="status" className="text-sm text-positivo bg-positivo/10 rounded-lg px-3 py-3">
+                                    Si {emailOlvido} tiene cuenta, te llegará un email para elegir una contraseña nueva. Mira también en spam.
+                                </p>
+                                <button type="button" onClick={() => cambiarModo('login')} className="text-sm text-acento font-medium min-h-11">
+                                    Volver a iniciar sesión
+                                </button>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleOlvido} className="space-y-3">
+                                <p className="text-sm text-tinta-suave">
+                                    Escribe tu email y te enviaremos un enlace para elegir una contraseña nueva.
+                                </p>
+                                <label className="block text-sm text-tinta-suave">
+                                    Email
+                                    <input
+                                        type="email"
+                                        value={emailOlvido}
+                                        onChange={(e) => setEmailOlvido(e.target.value)}
+                                        required
+                                        autoComplete="email"
+                                        className="mt-1 w-full bg-fondo border border-linea rounded-lg px-3 py-2.5 text-tinta focus:outline-none focus:ring-2 focus:ring-acento"
+                                    />
+                                </label>
+                                {errorOlvido && (
+                                    <p role="alert" className="text-sm text-negativo bg-negativo/10 rounded-lg px-3 py-2">{errorOlvido}</p>
+                                )}
+                                <button
+                                    type="submit"
+                                    disabled={enviandoOlvido}
+                                    className="w-full py-3 rounded-xl bg-acento text-sobre-acento font-semibold disabled:opacity-60"
+                                >
+                                    {enviandoOlvido ? 'Enviando...' : 'Enviar enlace'}
+                                </button>
+                                <button type="button" onClick={() => cambiarModo('login')} className="w-full text-sm text-tinta-suave min-h-11">
+                                    Volver a iniciar sesión
+                                </button>
+                            </form>
+                        )
+                    ) : modo === 'login' ? (
                         <form onSubmit={handleLogin} className="space-y-3">
                             <input
                                 type="email"
@@ -128,6 +190,9 @@ export default function Login() {
                                 className="w-full py-3 rounded-xl bg-acento text-sobre-acento font-semibold disabled:opacity-60"
                             >
                                 {cargando ? 'Entrando...' : 'Entrar'}
+                            </button>
+                            <button type="button" onClick={() => cambiarModo('olvido')} className="w-full text-sm text-tinta-suave hover:text-tinta min-h-11">
+                                ¿Has olvidado tu contraseña?
                             </button>
                         </form>
                     ) : solicitudEnviada ? (

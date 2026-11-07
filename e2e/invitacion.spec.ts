@@ -1,25 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { expect, test } from '@playwright/test'
-import { CONTRASENA, clienteAdmin, completarBienvenida, crearUsuaria, emailUnico, hacerAdmin, iniciarSesion } from './ayudas'
+import { CONTRASENA, clienteAdmin, completarBienvenida, crearUsuaria, emailUnico, enlaceDelEmail, hacerAdmin, iniciarSesion } from './ayudas'
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from './entorno'
-
-// Mailpit: el buzón falso de Supabase local. Los emails llegan aquí y no a nadie de verdad.
-const MAILPIT = 'http://127.0.0.1:54324'
-
-// Espera el email de invitación y devuelve su enlace
-async function enlaceDeInvitacion(email: string): Promise<string> {
-    for (let intento = 0; intento < 30; intento++) {
-        const busqueda = await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`)
-        const { messages } = (await busqueda.json()) as { messages?: { ID: string }[] }
-        if (messages?.length) {
-            const mensaje = (await (await fetch(`${MAILPIT}/api/v1/message/${messages[0].ID}`)).json()) as { HTML: string }
-            const enlace = mensaje.HTML.match(/href="([^"]+)"/)?.[1]
-            if (enlace) return enlace.replaceAll('&amp;', '&')
-        }
-        await new Promise((r) => setTimeout(r, 500))
-    }
-    throw new Error(`No ha llegado la invitación a ${email}. ¿Está Supabase local en marcha?`)
-}
 
 test('la admin aprueba una solicitud, llega la invitación y la persona elige su contraseña y entra', async ({ page, browser }) => {
     // Alguien se ha apuntado a la lista de espera
@@ -38,7 +20,7 @@ test('la admin aprueba una solicitud, llega la invitación y la persona elige su
     await expect(page.getByRole('button', { name: `Aprobar e invitar a ${invitada}` })).toHaveCount(0)
 
     // El enlace lleva a la página /aceptar de TempoMio, no directamente a Supabase
-    const enlace = await enlaceDeInvitacion(invitada)
+    const enlace = await enlaceDelEmail(invitada, 'Te han invitado a TempoMio')
     expect(enlace).toContain('/aceptar?token_hash=')
 
     // Un filtro de correo «abre» el enlace para revisarlo: no debe gastarlo
@@ -52,10 +34,10 @@ test('la admin aprueba una solicitud, llega la invitación y la persona elige su
     await nueva.getByRole('button', { name: 'Aceptar la invitación' }).click()
 
     await expect(nueva.getByRole('heading', { name: 'Elige tu contraseña' })).toBeVisible()
-    await nueva.getByLabel('Contraseña', { exact: true }).fill('corta')
-    await nueva.getByLabel('Repite la contraseña').fill('corta')
+    await nueva.getByLabel('Contraseña', { exact: true }).fill('12345')
+    await nueva.getByLabel('Repite la contraseña').fill('12345')
     await nueva.getByRole('button', { name: 'Guardar y entrar' }).click()
-    await expect(nueva.getByRole('alert')).toContainText('al menos 8')
+    await expect(nueva.getByRole('alert')).toContainText('al menos 6')
 
     await nueva.getByLabel('Contraseña', { exact: true }).fill('residencia-2026')
     await nueva.getByLabel('Repite la contraseña').fill('residencia-2026')
@@ -99,4 +81,67 @@ test('la función de invitar rechaza a quien no es admin', async () => {
         body: cuerpo,
     })
     expect(normal.status).toBe(403)
+})
+
+test('si la invitación no se ha aceptado, «Reenviar» manda un enlace nuevo que funciona', async ({ page, browser }) => {
+    const invitada = emailUnico('reenvio')
+    const { error } = await clienteAdmin().from('solicitudes_acceso').insert({ email: invitada })
+    if (error) throw new Error(error.message)
+
+    const emailAdmin = await crearUsuaria()
+    await hacerAdmin(emailAdmin, 'Admin')
+    await iniciarSesion(page, emailAdmin)
+    await completarBienvenida(page, 'Admin')
+    await page.goto('/admin/lista-de-espera')
+    await page.getByRole('button', { name: `Aprobar e invitar a ${invitada}` }).click()
+    await expect(page.getByText(`Invitación enviada a ${invitada} ✓`)).toBeVisible()
+    const primerEnlace = await enlaceDelEmail(invitada, 'Te han invitado a TempoMio', 1)
+
+    // No la acepta: la admin la reenvía
+    await page.getByRole('button', { name: /Ver procesadas/ }).click()
+    await page.getByRole('button', { name: `Reenviar la invitación a ${invitada}` }).click()
+    await expect(page.getByText(`Invitación enviada a ${invitada} ✓`)).toBeVisible()
+    const segundoEnlace = await enlaceDelEmail(invitada, 'Te han invitado a TempoMio', 2)
+    expect(segundoEnlace).not.toBe(primerEnlace)
+
+    // El enlace nuevo funciona
+    const suMovil = await browser.newContext()
+    const nueva = await suMovil.newPage()
+    await nueva.goto(segundoEnlace)
+    await nueva.getByRole('button', { name: 'Aceptar la invitación' }).click()
+    await expect(nueva.getByRole('heading', { name: 'Elige tu contraseña' })).toBeVisible()
+    await suMovil.close()
+})
+
+test('«Reenviar» nunca borra una cuenta que ya tiene datos, aunque tenga la marca de contraseña pendiente', async ({ page }) => {
+    // Una trabajadora con perfil y saldo (ha pasado la bienvenida)...
+    const trabajadora = await crearUsuaria()
+    const suMovil = await page.context().browser()!.newContext()
+    const movil = await suMovil.newPage()
+    await iniciarSesion(movil, trabajadora)
+    await completarBienvenida(movil, 'Rosa')
+    await suMovil.close()
+
+    // ...que tiene la marca puesta (recuperación a medias, o se la puso ella misma)
+    const admin = clienteAdmin()
+    const { data: lista } = await admin.auth.admin.listUsers({ perPage: 1000 })
+    const usuaria = lista.users.find((u) => u.email === trabajadora)!
+    await admin.auth.admin.updateUserById(usuaria.id, { user_metadata: { contrasena_pendiente: true } })
+
+    // Su email aparece en la lista de espera (cualquiera puede apuntar un email)
+    const { error } = await admin.from('solicitudes_acceso').insert({ email: trabajadora, estado: 'aprobada' })
+    if (error) throw new Error(error.message)
+
+    const emailAdmin = await crearUsuaria()
+    await hacerAdmin(emailAdmin, 'Admin')
+    await iniciarSesion(page, emailAdmin)
+    await completarBienvenida(page, 'Admin')
+    await page.goto('/admin/lista-de-espera')
+    await page.getByRole('button', { name: /Ver procesadas/ }).click()
+    await page.getByRole('button', { name: `Reenviar la invitación a ${trabajadora}` }).click()
+    await expect(page.getByRole('alert')).toContainText('ya tiene cuenta')
+
+    // La cuenta y sus datos siguen ahí
+    const { data: perfil } = await admin.from('perfiles').select('nombre').eq('id', usuaria.id).maybeSingle()
+    expect(perfil?.nombre).toBe('Rosa')
 })

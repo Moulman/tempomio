@@ -10,7 +10,8 @@ interface Props {
 
 // Primera pantalla de quien entra por una invitación (el enlace del email ya
 // ha iniciado su sesión): elige su contraseña para las próximas veces.
-// Al guardarla se quita `contrasena_pendiente` y App pasa a la bienvenida.
+// Al guardarla se quitan `contrasena_pendiente` (invitación) y `cambiando_contrasena`
+// (recuperación), y App sigue con la app normal (o la bienvenida si es nueva).
 export default function ElegirContrasena({ session }: Props) {
     const [contrasena, setContrasena] = useState('')
     const [repetida, setRepetida] = useState('')
@@ -28,9 +29,16 @@ export default function ElegirContrasena({ session }: Props) {
         }
         setGuardando(true)
         setError(null)
-        const { error } = await supabase.auth.updateUser({ password: contrasena, data: { contrasena_pendiente: false } })
+        const { error } = await supabase.auth.updateUser({
+            password: contrasena,
+            data: { contrasena_pendiente: false, cambiando_contrasena: false },
+        })
         setGuardando(false)
-        if (error) setError('No se pudo guardar la contraseña. Inténtalo otra vez.')
+        if (error) {
+            setError(error.code === 'same_password'
+                ? 'Elige una contraseña distinta de la que tenías.'
+                : 'No se pudo guardar la contraseña. Inténtalo otra vez.')
+        }
     }
 
     const campo = 'w-full bg-fondo border border-linea rounded-lg px-3 py-2.5 text-tinta focus:outline-none focus:ring-2 focus:ring-acento'
@@ -69,7 +77,7 @@ export default function ElegirContrasena({ session }: Props) {
                             className={`mt-1 ${campo}`}
                         />
                     </label>
-                    <p className="text-xs text-tinta-suave">Al menos {LONGITUD_MINIMA} caracteres.</p>
+                    <p className="text-xs text-tinta-suave">Al menos {LONGITUD_MINIMA} caracteres. Un PIN de {LONGITUD_MINIMA} cifras vale.</p>
                     {error && (
                         <p role="alert" className="text-sm text-negativo bg-negativo/10 rounded-lg px-3 py-2">{error}</p>
                     )}

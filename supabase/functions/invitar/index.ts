@@ -10,6 +10,13 @@
 //   2. Esa persona es admin (se lee de la base de datos, no de la petición)
 //   3. La solicitud existe
 // Después invita, marca la solicitud como aprobada y responde.
+//
+// Reenviar: si ya hay cuenta con ese email, solo se borra para invitar de
+// nuevo si NO tiene datos en la base de datos (ni perfil, ni fichajes, ni
+// saldo...). Las tablas borran en cascada: borrar una cuenta con datos sería
+// perder su historial de horas. La marca `contrasena_pendiente` de
+// user_metadata la puede escribir la propia usuaria, así que nunca decide
+// sola un borrado.
 // ============================================================
 import { createClient } from 'npm:@supabase/supabase-js@2.116.0'
 
@@ -37,7 +44,47 @@ function claveSecreta(): string {
     return antigua
 }
 
+// ¿Hay alguna fila de esa persona en las tablas de la app? (con la clave
+// secreta: RLS no aplica). Ante cualquier error, se responde «sí»: si no se
+// puede comprobar, no se borra.
+const TABLAS_CON_DATOS: [string, string][] = [
+    ['perfiles', 'id'],
+    ['fichajes', 'user_id'],
+    ['horarios_base', 'user_id'],
+    ['ajustes_bolsa', 'user_id'],
+    ['sugerencias', 'user_id'],
+]
+async function tieneDatos(admin: ReturnType<typeof createClient>, userId: string): Promise<boolean> {
+    for (const [tabla, columna] of TABLAS_CON_DATOS) {
+        const { count, error } = await admin.from(tabla).select(columna, { count: 'exact', head: true }).eq(columna, userId)
+        if (error || count === null || count > 0) return true
+    }
+    return false
+}
+
+// Pocas cuentas: se recorre la lista (la API de admin no busca por email)
+async function buscarUsuaria(admin: ReturnType<typeof createClient>, email: string) {
+    const buscado = email.toLowerCase()
+    for (let pagina = 1; pagina <= 20; pagina++) {
+        const { data, error } = await admin.auth.admin.listUsers({ page: pagina, perPage: 1000 })
+        if (error) throw error
+        const encontrada = data.users.find((u) => u.email?.toLowerCase() === buscado)
+        if (encontrada) return encontrada
+        if (data.users.length < 1000) return null
+    }
+    return null
+}
+
 Deno.serve(async (req) => {
+    try {
+        return await atender(req)
+    } catch (e) {
+        // Cualquier fallo inesperado responde con CORS, para que la app pueda leer el mensaje
+        return respuesta({ error: `Error inesperado: ${e instanceof Error ? e.message : String(e)}` }, 500)
+    }
+})
+
+async function atender(req: Request): Promise<Response> {
     if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
     if (req.method !== 'POST') return respuesta({ error: 'Método no permitido' }, 405)
 
@@ -72,7 +119,18 @@ Deno.serve(async (req) => {
         .maybeSingle()
     if (!solicitud) return respuesta({ error: 'No existe esa solicitud' }, 404)
 
-    // 4. Invitación. `contrasena_pendiente` hace que la app le pida elegir
+    // 4. Reenviar (ver cabecera): solo se borra una cuenta vacía que nunca eligió contraseña
+    const existente = await buscarUsuaria(admin, solicitud.email)
+    if (existente) {
+        const vacia = existente.user_metadata?.contrasena_pendiente === true && !(await tieneDatos(admin, existente.id))
+        if (!vacia) {
+            return respuesta({ error: `${solicitud.email} ya tiene cuenta. Si no recuerda la contraseña, puede usar «¿Has olvidado tu contraseña?»` }, 409)
+        }
+        const { error: errorBorrar } = await admin.auth.admin.deleteUser(existente.id)
+        if (errorBorrar) return respuesta({ error: `No se pudo preparar la nueva invitación: ${errorBorrar.message}` }, 500)
+    }
+
+    // 5. Invitación. `contrasena_pendiente` hace que la app le pida elegir
     // contraseña al entrar. `redirectTo` solo se acepta si está en la lista de
     // URLs permitidas de Supabase (Authentication → URL Configuration).
     const { error: errorInvitar } = await admin.auth.admin.inviteUserByEmail(solicitud.email, {
@@ -86,7 +144,7 @@ Deno.serve(async (req) => {
             : respuesta({ error: `No se pudo enviar la invitación: ${errorInvitar.message}` }, 500)
     }
 
-    // 5. Marcar la solicitud como aprobada
+    // 6. Marcar la solicitud como aprobada
     const { error: errorEstado } = await admin
         .from('solicitudes_acceso')
         .update({ estado: 'aprobada' })
@@ -96,4 +154,4 @@ Deno.serve(async (req) => {
     }
 
     return respuesta({ ok: true, email: solicitud.email })
-})
+}

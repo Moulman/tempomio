@@ -87,8 +87,18 @@ export default function PaginaAdmin() {
                     .order('created_at', { ascending: false }),
             ])
 
-            // Último fichaje de cada usuario (pocas cuentas: una consulta por usuario)
+            if (cancelado) return
             const perfiles = perfilesRes.data || []
+            const fallo = perfilesRes.error || solicitudesRes.error || semanaRes.error || sugerenciasRes.error
+            setError(fallo ? `No se pudieron cargar todos los datos: ${fallo.message}` : null)
+            setUsuarios(perfiles.map((p) => ({ ...p, ultimoUso: null })))
+            setSolicitudes(solicitudesRes.data || [])
+            setSugerencias(sugerenciasRes.data || [])
+            setFichajesSemana(semanaRes.count ?? null)
+            // El panel se enseña ya; el «último uso» llega después (una consulta
+            // por usuaria: con muchas cuentas tardaría y bloquearía todo el panel)
+            setCargado(true)
+
             const ultimos = await Promise.all(
                 perfiles.map((p) =>
                     supabase
@@ -102,14 +112,7 @@ export default function PaginaAdmin() {
                 )
             )
             if (cancelado) return
-
-            const fallo = perfilesRes.error || solicitudesRes.error || semanaRes.error || sugerenciasRes.error
-            setError(fallo ? `No se pudieron cargar todos los datos: ${fallo.message}` : null)
             setUsuarios(perfiles.map((p, i) => ({ ...p, ultimoUso: ultimos[i].data?.fecha ?? null })))
-            setSolicitudes(solicitudesRes.data || [])
-            setSugerencias(sugerenciasRes.data || [])
-            setFichajesSemana(semanaRes.count ?? null)
-            setCargado(true)
         }
 
         cargar()

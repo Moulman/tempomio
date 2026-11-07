@@ -1,16 +1,17 @@
-// Enlaces de los emails de Supabase (invitación).
+// Enlaces de los emails de Supabase (invitación y recuperar contraseña).
 //
 // El email NO lleva el enlace de un solo uso de Supabase directamente: lleva a
-// /aceptar?token_hash=...&type=invite, una página de TempoMio con un botón. El
+// /aceptar?token_hash=...&type=invite|recovery, una página de TempoMio con un botón. El
 // código solo se gasta al pulsar el botón (verifyOtp). Así, los filtros de
 // correo que abren los enlaces para revisarlos, o un doble clic, no lo gastan.
-export type TipoEnlace = 'invite'
+// invite: invitación de la admin · recovery: «¿Has olvidado tu contraseña?»
+export type TipoEnlace = 'invite' | 'recovery'
 
 export function leerEnlaceEmail(busqueda: string): { tokenHash: string; tipo: TipoEnlace } | null {
     const params = new URLSearchParams(busqueda)
     const tokenHash = params.get('token_hash')
     const tipo = params.get('type')
-    if (!tokenHash || tipo !== 'invite') return null
+    if (!tokenHash || (tipo !== 'invite' && tipo !== 'recovery')) return null
     return { tokenHash, tipo }
 }
 
