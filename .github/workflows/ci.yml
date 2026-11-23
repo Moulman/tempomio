@@ -80,7 +80,7 @@ jobs:
       - run: npm run test:e2e
 
       # Si algo falla, el informe con capturas y trazas queda descargable 7 días
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: informe-playwright
